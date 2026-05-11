@@ -33,22 +33,22 @@ const Navbar = () => {
           ) : (
             <div className="logo-icon"></div>
           )}
-          <span className="logo-text">APEX HOTEL AND RESORTS</span>
+         
         </Link>
         
         <div className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
           <Link to="/" onClick={() => setIsMenuOpen(false)}>HOME</Link>
-          <Link to="/destinations" onClick={() => setIsMenuOpen(false)}>HOTELS</Link>
-          <Link to="/listings" onClick={() => setIsMenuOpen(false)}>DESTINATIONS</Link>
+          <Link to="/destinations" onClick={() => setIsMenuOpen(false)}>DESTINATIONS</Link>
+          <Link to="/listings" onClick={() => setIsMenuOpen(false)}>HOTELS</Link>
           {/* <Link to="/about" onClick={() => setIsMenuOpen(false)}>EVENTS</Link> */}
           <Link to="/contact" onClick={() => setIsMenuOpen(false)}>CONTACT</Link>
         </div>
 
         <div className="nav-actions">
           <button className="btn-login"><span className="user-icon">👤</span> SIGN IN</button>
-          <Link to="/contact" className="btn-trip" onClick={() => setIsMenuOpen(false)}>
+          <button type="button" className="btn-trip" onClick={() => setIsMenuOpen(false)}>
             PLAN YOUR TRIP / TOUR
-          </Link>
+          </button>
         </div>
 
         <div className="hamburger" onClick={toggleMenu}>

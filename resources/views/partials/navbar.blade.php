@@ -2,13 +2,13 @@
     <div class="nav-wrapper">
         <a href="{{ url('/') }}" class="logo">
             <div class="logo-icon"></div>
-            <span class="logo-text">APEX HOTEL AND RESORTS</span>
+           
         </a>
 
         <div class="nav-links" data-nav-links>
             <a href="{{ url('/') }}">HOME</a>
-            <a href="{{ url('/destinations') }}">HOTELS</a>
-            <a href="{{ url('/listings') }}">DESTINATIONS</a>
+            <a href="{{ url('/destinations') }}">DESTINATIONS</a>
+            <a href="{{ url('/hotel-listing') }}">HOTELS</a>
             <a href="{{ url('/contact') }}">GETAWAYS</a>
         </div>
 

@@ -3,7 +3,6 @@ import {
   adminLogin,
   fetchAdminBookings,
   fetchCms,
-  seedCms,
   updateBooking,
   updateBookingStatus,
   updateCms,
@@ -138,9 +137,9 @@ const prepareImageUpload = (file) => (isHeicFile(file) ? readFileAsDataUrl(file)
 /* ── NAV_ITEMS ─────────────────────────────────────── */
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-  { id: 'home-hero', label: 'Hero Section', icon: '🖼️' },
-  { id: 'listings-hero', label: 'Listings Hero', icon: '🏨' },
-  { id: 'getaways-hero', label: 'Getaways Hero', icon: '🧳' },
+  { id: 'home-hero', label: 'Home Hero Section', icon: '🖼️' },
+  { id: 'listings-hero', label: 'Hotel Listing', icon: '🏨' },
+  { id: 'getaways-hero', label: 'Contact Hero Section', icon: '🧳' },
   { id: 'home-travel', label: 'Travel Section', icon: '✈️' },
   { id: 'home-locations', label: 'Our Locations', icon: '📍' },
   { id: 'home-dining', label: 'Dine In', icon: '🍽️' },
@@ -763,15 +762,6 @@ const AdminCMS = () => {
     finally { setSaving(false); }
   };
 
-  const handleSeed = async () => {
-    setError(''); setStatus('');
-    try {
-      await seedCms(token);
-      await loadDashboard(token);
-      setStatus('CMS data seeded successfully.');
-    } catch (err) { setError(err.message || 'Failed to seed.'); }
-  };
-
   const handleBookingStatus = async (bookingId, val) => {
     try {
       const result = await updateBookingStatus(bookingId, val, token, {
@@ -915,11 +905,6 @@ const AdminCMS = () => {
         <div className="stat-card green"><span className="stat-icon">📍</span><div className="stat-content"><div className="stat-number">{stats.points}</div><div className="stat-label">Tourist Points</div></div></div>
         <div className="stat-card orange"><span className="stat-icon">📋</span><div className="stat-content"><div className="stat-number">{stats.bookings}</div><div className="stat-label">Bookings</div></div></div>
       </div>
-      <div className="quick-actions">
-        <button className="btn primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : '💾 Save All Changes'}</button>
-        <button className="btn outline" onClick={handleSeed}>🌱 Seed Default Data</button>
-        <button className="btn outline" onClick={() => loadDashboard(token)}>🔄 Refresh Data</button>
-      </div>
     </div>
   );
 
@@ -927,12 +912,12 @@ const AdminCMS = () => {
     const hero = homePage.hero || {};
     return (
       <div className="panel-section">
-        <h2 className="section-title">🖼️ Hero Section</h2>
+        <h2 className="section-title">🖼️Home Hero Section</h2>
         <p className="section-desc">Manage the homepage hero slider, title, and contact buttons.</p>
         <div className="form-grid">
           <div className="form-group full">
             <label>Hero Title</label>
-            <textarea rows={3} value={hero.title || ''} onChange={(e) => patchHomeNested('hero', 'title', e.target.value)} placeholder="CHECK IN TO THE\nTIME OF YOUR LIFE" />
+            <textarea rows={3} value={hero.title || ''} onChange={(e) => patchHomeNested('hero', 'title', e.target.value)} placeholder="CHECK IN TO THE TIME OF YOUR LIFE" />
           </div>
           <div className="form-group">
             <label>Phone Number</label>
@@ -968,12 +953,12 @@ const AdminCMS = () => {
 
   const renderListingsHeroSection = () => (
     <div className="panel-section">
-      <h2 className="section-title">🏨 Listings Hero</h2>
+      <h2 className="section-title">🏨 Hotel Listing</h2>
       <p className="section-desc">Manage the hero title and slider images shown at the top of the Listings page.</p>
       <div className="form-grid">
         <div className="form-group full">
           <label>Hero Title</label>
-          <textarea rows={3} value={listingsPage.heroTitle || ''} onChange={(e) => patchListingsPage('heroTitle', e.target.value)} placeholder="FIND YOUR\nPERFECT HOTEL" />
+          <textarea rows={3} value={listingsPage.heroTitle || ''} onChange={(e) => patchListingsPage('heroTitle', e.target.value)} placeholder="FIND YOUR PERFECT HOTEL" />
         </div>
         <div className="form-group full upload-field-stack">
           <label>Hero Slides Upload</label>
@@ -1000,12 +985,12 @@ const AdminCMS = () => {
 
   const renderGetawaysHeroSection = () => (
     <div className="panel-section">
-      <h2 className="section-title">🧳 Getaways Hero</h2>
+      <h2 className="section-title">Contact Hero Section</h2>
       <p className="section-desc">Manage the hero title and slider images shown at the top of the Getaways page.</p>
       <div className="form-grid">
         <div className="form-group full">
           <label>Hero Title</label>
-          <textarea rows={3} value={getawaysPage.heroTitle || ''} onChange={(e) => patchGetawaysPage('heroTitle', e.target.value)} placeholder="PLAN YOUR\nTRIP / TOUR" />
+          <textarea rows={3} value={getawaysPage.heroTitle || ''} onChange={(e) => patchGetawaysPage('heroTitle', e.target.value)} placeholder="PLAN YOUR TRIP OR TOUR" />
         </div>
         <div className="form-group full upload-field-stack">
           <label>Hero Slides Upload</label>
@@ -1909,7 +1894,7 @@ const AdminCMS = () => {
               rows={3}
               value={destinationsPage.heroTitle || ''}
               onChange={(e) => patchDestinationsPage('heroTitle', e.target.value)}
-              placeholder="EXPLORE\nDESTINATIONS"
+              placeholder="EXPLORE DESTINATIONS"
             />
           </div>
           <div className="form-group full admin-subsection">
@@ -1965,16 +1950,8 @@ const AdminCMS = () => {
                     <input value={selectedDestination.name || ''} onChange={(e) => { const name = e.target.value; patchDestination(selectedDestination.id, (d) => ({ ...d, name, slug: toSlug(name) })); }} />
                   </div>
                   <div className="form-group">
-                    <label>Slug</label>
+                    <label>URL</label>
                     <input value={selectedDestination.slug || ''} onChange={(e) => patchDestination(selectedDestination.id, (d) => ({ ...d, slug: toSlug(e.target.value) }))} />
-                  </div>
-                  <div className="form-group">
-                    <label>Google Place ID</label>
-                    <input
-                      value={selectedDestination.googlePlaceId || ''}
-                      onChange={(e) => patchDestination(selectedDestination.id, (d) => ({ ...d, googlePlaceId: e.target.value }))}
-                      placeholder="ChIJ..."
-                    />
                   </div>
                   <div className="form-group">
                     <label>Card Image Upload</label>
@@ -2195,7 +2172,7 @@ const AdminCMS = () => {
               <img src={adminBrandLogo} alt="Brand logo" className="brand-logo-img" />
             ) : null}
           </span>
-          <span className="brand-sub">CMS Panel</span>
+          {/* <span className="brand-sub">CMS Panel</span> */}
         </div>
         <nav className="sidebar-nav">
           {NAV_ITEMS.map((item) => (
