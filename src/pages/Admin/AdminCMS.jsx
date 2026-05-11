@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import heic2any from 'heic2any';
 import {
   adminLogin,
   fetchAdminBookings,
@@ -93,11 +94,14 @@ const getBase64SizeMb = (dataUrl) => {
   return kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
 };
 
-const compressImageFile = (file) => new Promise((resolve, reject) => {
+const ensureMaxImageSize = (file) => {
   if (file.size > MAX_IMAGE_BYTES) {
-    return reject(new Error(`"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB — each image must be 4 MB or smaller.`));
+    throw new Error(`"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB — each image must be 4 MB or smaller.`);
   }
-  const objectUrl = URL.createObjectURL(file);
+};
+
+const compressImageSource = (source, fileLabel = 'image') => new Promise((resolve, reject) => {
+  const objectUrl = URL.createObjectURL(source);
   const img = new Image();
   img.onload = () => {
     URL.revokeObjectURL(objectUrl);
@@ -116,23 +120,38 @@ const compressImageFile = (file) => new Promise((resolve, reject) => {
   };
   img.onerror = () => {
     URL.revokeObjectURL(objectUrl);
-    reject(new Error(`Failed to load "${file.name}".`));
+    reject(new Error(`Failed to load "${fileLabel}".`));
   };
   img.src = objectUrl;
 });
 
-const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
-  if (file.size > MAX_IMAGE_BYTES) {
-    return reject(new Error(`"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB — each image must be 4 MB or smaller.`));
+const compressImageFile = (file) => {
+  ensureMaxImageSize(file);
+  return compressImageSource(file, file.name);
+};
+
+const convertHeicFile = async (file) => {
+  ensureMaxImageSize(file);
+
+  try {
+    const converted = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.78,
+    });
+
+    const convertedBlob = Array.isArray(converted) ? converted[0] : converted;
+    if (!(convertedBlob instanceof Blob)) {
+      throw new Error('Converted HEIC file is invalid.');
+    }
+
+    return compressImageSource(convertedBlob, file.name);
+  } catch (_error) {
+    throw new Error(`Failed to convert "${file.name}". Please upload JPG, PNG, or WEBP instead.`);
   }
+};
 
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result || ''));
-  reader.onerror = () => reject(new Error(`Failed to read "${file.name}".`));
-  reader.readAsDataURL(file);
-});
-
-const prepareImageUpload = (file) => (isHeicFile(file) ? readFileAsDataUrl(file) : compressImageFile(file));
+const prepareImageUpload = (file) => (isHeicFile(file) ? convertHeicFile(file) : compressImageFile(file));
 
 /* ── NAV_ITEMS ─────────────────────────────────────── */
 const NAV_ITEMS = [
