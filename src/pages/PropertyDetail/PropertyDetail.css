@@ -150,10 +150,23 @@
   font-weight: 700;
 }
 
+.price-section .price-original {
+  font-size: 1rem;
+  color: #8fa3b1;
+  text-decoration: line-through;
+  margin-bottom: 0.35rem;
+}
+
 .price-section .price span {
   font-size: 1rem;
   color: #5f7f93;
   font-weight: 400;
+}
+
+.price-section .price-discount-note {
+  margin-top: 0.45rem;
+  color: #b45309;
+  font-weight: 600;
 }
 
 .property-stats {
@@ -413,5 +426,63 @@
 
   .detail-content {
     padding: 1.5rem;
+  }
+}
+
+.property-detail-page {
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .breadcrumb {
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+  }
+
+  .price-section {
+    width: 100%;
+  }
+
+  .price-section .btn {
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .thumbnail-images {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .features-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .detail-content {
+    padding: 1rem;
+  }
+
+  .main-image {
+    height: 220px;
+  }
+
+  .thumbnail {
+    height: 84px;
+  }
+
+  .property-stats {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .amenity-item {
+    width: 100%;
+    text-align: center;
+    border-radius: 12px;
   }
 }

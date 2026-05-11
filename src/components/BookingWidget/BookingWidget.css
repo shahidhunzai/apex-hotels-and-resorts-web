@@ -29,3 +29,57 @@
 .booking-widget.card .card-value { color: #333; font-weight: 700; }
 
 .booking-widget .close-widget { position: absolute; top: 8px; right: 10px; background: transparent; border: none; font-size: 1.1rem; cursor: pointer; }
+
+@media (max-width: 992px) {
+	.booking-widget,
+	.booking-widget.card {
+		max-width: 100%;
+		width: 100%;
+	}
+}
+
+@media (max-width: 640px) {
+	.booking-widget {
+		padding: 1.2rem;
+	}
+
+	.booking-dates .date-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.date-sep {
+		display: none;
+	}
+
+	.rooms-field .rooms-counter {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.booking-widget.card {
+		padding: 1rem;
+	}
+
+	.booking-widget.card .card-field {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.35rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.booking-widget {
+		padding: 1rem;
+	}
+
+	.booking-field label,
+	.booking-widget.card .card-field label {
+		font-size: 0.8rem;
+	}
+
+	.booking-field select,
+	.booking-field input[type="date"] {
+		font-size: 16px;
+	}
+}

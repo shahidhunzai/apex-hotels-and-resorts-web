@@ -42,6 +42,26 @@ const hasContentValue = (value) => {
   return String(value || '').trim().length > 0;
 };
 
+const extractGoogleMapsEmbedSrc = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const iframeMatch = raw.match(/src=["']([^"']+)["']/i);
+  const candidate = String(iframeMatch?.[1] || raw).trim();
+  if (!candidate) return '';
+
+  try {
+    const parsed = new URL(candidate);
+    const host = parsed.hostname.toLowerCase();
+    const path = parsed.pathname.toLowerCase();
+    const isGoogleHost = host.includes('google.com') || host.includes('googleusercontent.com');
+    const isMapsEmbed = path.includes('/maps/embed');
+    return isGoogleHost && isMapsEmbed ? parsed.toString() : '';
+  } catch (_error) {
+    return '';
+  }
+};
+
 const getDestinationContentState = (destination, pointTabs = {}) => {
   const initialized = Boolean(destination?.destinationContentInitialized);
 
@@ -55,6 +75,7 @@ const getDestinationContentState = (destination, pointTabs = {}) => {
       ? (destination?.destinationInfoTitle || destination?.name || '')
       : (destination?.destinationInfoTitle || destination?.name || pointTabs.infoTitle || ''),
     infoDescription: resolveValue(destination?.destinationInfoDescription, pointTabs.infoDescription, ''),
+    mapEmbed: resolveValue(destination?.destinationMapEmbed, '', ''),
     infoBullets: resolveValue(destination?.destinationInfoBullets, pointTabs.infoBullets, []),
     infoGallery: resolveValue(destination?.destinationInfoGallery, pointTabs.infoGallery, []),
     rooms: resolveValue(destination?.destinationRooms, pointTabs.rooms, []),
@@ -163,6 +184,7 @@ const DynamicDestinationDetail = () => {
   const contentKeyBase = selectedPoint?.id || destination?.id || destinationSlug || 'destination';
   const resolvedInfoTitle = destinationContent.infoTitle || tabs.infoTitle || destination?.name || '';
   const resolvedInfoDescription = destinationContent.infoDescription || tabs.infoDescription || 'No description available.';
+  const resolvedMapEmbedSrc = extractGoogleMapsEmbedSrc(destinationContent.mapEmbed);
   const resolvedInfoBullets = cleanBulletList(destinationContent.infoBullets).length > 0 ? cleanBulletList(destinationContent.infoBullets) : infoBullets;
   const resolvedInfoGallery = cleanLineList(destinationContent.infoGallery).length > 0 ? cleanLineList(destinationContent.infoGallery) : infoGallery;
   const resolvedFamousPlaces = (destinationContent.famousPlaces || []).map((place) => ({
@@ -337,30 +359,32 @@ const DynamicDestinationDetail = () => {
         }
         infoTitle={resolvedInfoTitle}
         infoDescription={
-          <div className="tp-info-layout" style={{ display: 'flex', gap: '24px' }}>
-            <div className="tp-info-left">
-              <h1 className="tp-info-title">{resolvedInfoTitle}</h1>
-              <p className="tp-info-desc">{resolvedInfoDescription}</p>
-              <ul className="tp-info-bullets">
-                {resolvedInfoBullets.map((item, idx) => (
-                  <li key={idx}>{item}</li>
-                ))}
-              </ul>
-            </div>
-            {resolvedInfoGallery.length > 0 && (
-              <div className="tp-info-gallery">
-                <div className="tp-info-gallery-grid">
-                  {resolvedInfoGallery.slice(0, 3).map((image, idx) => (
-                    <img
-                      key={`${contentKeyBase}-info-${idx}`}
-                      src={image}
-                      alt={`${destination.name}-${idx + 1}`}
-                      className={`tp-info-gallery-img ${idx === 0 ? 'double' : 'single'}`}
-                    />
+          <div className="tp-info-layout">
+            <div className="tp-info-layout-row">
+              <div className="tp-info-left">
+                <h1 className="tp-info-title">{resolvedInfoTitle}</h1>
+                <p className="tp-info-desc">{resolvedInfoDescription}</p>
+                <ul className="tp-info-bullets">
+                  {resolvedInfoBullets.map((item, idx) => (
+                    <li key={idx}>{item}</li>
                   ))}
-                </div>
+                </ul>
               </div>
-            )}
+              {resolvedInfoGallery.length > 0 && (
+                <div className="tp-info-gallery">
+                  <div className="tp-info-gallery-grid">
+                    {resolvedInfoGallery.slice(0, 3).map((image, idx) => (
+                      <img
+                        key={`${contentKeyBase}-info-${idx}`}
+                        src={image}
+                        alt={`${destination.name}-${idx + 1}`}
+                        className={`tp-info-gallery-img ${idx === 0 ? 'double' : 'single'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         }
         roomsContent={
@@ -390,6 +414,27 @@ const DynamicDestinationDetail = () => {
         galleryDescription={destinationContent.galleryDescription || 'Browse the best views and moments from our property and surroundings.'}
         galleryImages={destinationContent.galleryImages || []}
       />
+
+      {resolvedMapEmbedSrc && (
+        <section className="destination-map-section">
+          <div className="tp-map-card">
+            <div className="tp-map-card-copy">
+              <h2 className="tp-map-card-title">Find Us On Map</h2>
+              <p className="tp-map-card-desc">Use the interactive map to view the exact location of {destination.name}.</p>
+            </div>
+            <div className="tp-map-frame-shell">
+              <iframe
+                src={resolvedMapEmbedSrc}
+                title={`${destination.name} map`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+                className="tp-map-frame"
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Shared Lightbox (Famous Places + Room Images) */}
       <Lightbox

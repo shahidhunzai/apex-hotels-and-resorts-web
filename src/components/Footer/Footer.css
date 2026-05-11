@@ -8,8 +8,8 @@
 }
 
 .footer-main {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.8fr) minmax(240px, 1fr);
   align-items: flex-start;
   width: 100%;
   max-width: 1200px;
@@ -18,20 +18,19 @@
   border-radius: 8px;
   padding: 60px 40px 40px 40px;
   box-shadow: 0 8px 40px 0 rgba(31,45,70,0.08);
-  gap: 40px;
+  column-gap: 28px;
+  row-gap: 24px;
   z-index: 1;
   position: relative;
 }
 
 .footer-col {
-  flex: 1 1 0;
-  min-width: 220px;
+  min-width: 0;
 }
 
-.reviews-col { max-width: 340px; }
-.menu-col { max-width: 200px; }
-.journal-col { max-width: 320px; }
-.host-col { max-width: 260px; }
+.reviews-col { max-width: none; }
+.menu-col { max-width: none; }
+.host-col { max-width: none; }
 
 .footer-col h3 {
   font-size: 1.4rem;
@@ -51,6 +50,9 @@
   align-items: flex-start;
   gap: 1.1rem;
 }
+.review-body {
+  min-width: 0;
+}
 .review-avatar {
   width: 48px;
   height: 48px;
@@ -58,15 +60,36 @@
   object-fit: cover;
   border: 2px solid #e5e7eb;
 }
+.review-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
 .reviewer-name {
   font-weight: 600;
   color: #222;
-  margin-bottom: 0.2rem;
+}
+.review-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.14rem;
+  flex-shrink: 0;
+}
+.review-star {
+  color: #d1d5db;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.review-star.filled {
+  color: #f4b740;
 }
 .review-text {
   color: #888;
   font-size: 0.98rem;
   font-style: italic;
+  line-height: 1.55;
 }
 .reviews-dots {
   margin-top: 1.5rem;
@@ -90,43 +113,17 @@
   margin: 0;
 }
 .menu-col li {
-  color: #222;
   font-size: 1.05rem;
   margin-bottom: 1.1rem;
   letter-spacing: 0.2px;
-  cursor: pointer;
+}
+.menu-col li a {
+  color: #222;
+  text-decoration: none;
   transition: color 0.2s;
 }
-.menu-col li:hover {
+.menu-col li a:hover {
   color: #2d3e50;
-}
-
-.journal-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.3rem;
-}
-.journal-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.1rem;
-}
-.journal-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #e5e7eb;
-}
-.journal-title {
-  font-weight: 500;
-  color: #222;
-  font-size: 1.01rem;
-  margin-bottom: 0.2rem;
-}
-.journal-date {
-  color: #888;
-  font-size: 0.93rem;
 }
 
 .host-logos {
@@ -193,6 +190,11 @@
 .footer-social-icons i {
   font-size: 1rem;
 }
+.footer-social-icons svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
 
 .footer-social-row {
   display: flex;
@@ -230,10 +232,14 @@
     padding-left: 20px;
     padding-right: 20px;
   }
+  .footer-main {
+    grid-template-columns: minmax(0, 1.2fr) minmax(170px, 0.8fr) minmax(220px, 1fr);
+    column-gap: 22px;
+  }
 }
 @media (max-width: 900px) {
   .footer-main {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: 30px;
     padding: 40px 10px 20px 10px;
   }
@@ -249,6 +255,10 @@
 @media (max-width: 600px) {
   .footer-main {
     padding: 30px 2vw 10px 2vw;
+  }
+  .review-heading-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .footer-social-row {
     padding: 0 2vw 10px 2vw;

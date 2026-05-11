@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import './Contact.css';
-import BannerSection from '../../components/BannerSection/BannerSection';
+import Hero from '../../components/Hero/Hero';
 import ContactSection from '../../components/ContactSection/ContactSection';
 import { fetchCms } from '../../services/cmsApi';
 
 const Contact = () => {
-  const [hp, setHp] = useState(null);
+  const [cmsPages, setCmsPages] = useState({ homePage: {}, getawaysPage: {} });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeSlide, setActiveSlide] = useState(1);
 
   useEffect(() => {
     const loadContact = async () => {
       try {
         const cms = await fetchCms();
-        setHp(cms?.homePage || {});
+        setCmsPages({ homePage: cms?.homePage || {}, getawaysPage: cms?.getawaysPage || {} });
       } catch (err) {
         setError(err.message || 'Unable to load contact settings.');
       } finally {
@@ -24,11 +25,22 @@ const Contact = () => {
     loadContact();
   }, []);
 
+  const heroSlides = Array.isArray(cmsPages.getawaysPage?.heroSlides) && cmsPages.getawaysPage.heroSlides.length
+    ? cmsPages.getawaysPage.heroSlides
+    : (Array.isArray(cmsPages.homePage?.hero?.slides) ? cmsPages.homePage.hero.slides : []);
+  const heroTitle = cmsPages.getawaysPage?.heroTitle || 'PLAN YOUR\nTRIP / TOUR';
+  const heroPhone = cmsPages.homePage?.hero?.phone || undefined;
+  const heroWhatsapp = cmsPages.homePage?.hero?.whatsapp || undefined;
+
   return (
     <div className="contact-page">
-      <BannerSection
-        title={hp?.contact?.bannerTitle || 'Contact Us'}
-        subtitle={hp?.contact?.bannerSubtitle || 'We are here to help — reach out for any questions or support.'}
+      <Hero
+        slides={heroSlides}
+        activeSlide={activeSlide}
+        setActiveSlide={setActiveSlide}
+        title={heroTitle}
+        phone={heroPhone}
+        whatsapp={heroWhatsapp}
       />
 
       {loading ? (
@@ -36,7 +48,7 @@ const Contact = () => {
       ) : error ? (
         <div className="container"><p>{error}</p></div>
       ) : (
-        <ContactSection data={hp?.contact} />
+        <ContactSection data={cmsPages.homePage?.contact} />
       )}
     </div>
   );

@@ -1,0 +1,84 @@
+@import "../../node_modules/bootstrap/dist/css/bootstrap.min.css";
+@import "../../src/index.css";
+@import "../../src/App.css";
+@import "../../src/pages/Home/Home.css";
+@import "../../src/components/Navbar/Navbar.css";
+@import "../../src/components/Footer/Footer.css";
+@import "../../src/components/Hero/Hero.css";
+@import "../../src/components/Travel/Travel.css";
+@import "../../src/components/Locations/Locations.css";
+@import "../../src/components/DineIn/DineIn.css";
+@import "../../src/components/OffersBanner/OffersBanner.css";
+@import "../../src/components/AppSection/AppSection.css";
+@import "../../src/components/ContactSection/ContactSection.css";
+@import "../../src/components/BookingWidget/BookingWidget.css";
+@import "../../src/components/StickyBooking/StickyBooking.css";
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+}
+
+.page-shell {
+  min-height: 100vh;
+}
+
+.logo-icon::before {
+  content: 'A';
+  color: #2d3e50;
+  font-weight: 700;
+}
+
+.reviews-dots .dot {
+  border: none;
+  padding: 0;
+}
+
+.booking-widget.card .card-field {
+  cursor: pointer;
+}
+
+.booking-widget.card .card-field select,
+.booking-widget.card .card-field .date-row,
+.booking-widget.card .card-field .rooms-counter {
+  flex: 1;
+}
+
+.roomy-blade-home .btn-check-availability {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  border: none;
+  border-radius: 4px;
+  background: #2d3e50;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.roomy-blade-home .btn-check-availability:hover {
+  background: #1a2530;
+}
+
+.roomy-blade-home .search-icon {
+  font-size: 1rem;
+}
+
+.roomy-blade-home .contact-blue-bar {
+  width: 100%;
+  max-width: 220px;
+  height: 4px;
+  background: #202b46;
+  margin-top: 1rem;
+}
+
+@media (max-width: 992px) {
+  .nav-links.active {
+    display: flex;
+  }
+}

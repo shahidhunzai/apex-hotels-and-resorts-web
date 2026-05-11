@@ -486,6 +486,13 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
+.floating-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  fill: #fff;
+}
+
 .phone-btn {
   background: #4a5f7f;
 }
@@ -1195,5 +1202,120 @@
 
   .app-buttons {
     flex-direction: column;
+  }
+}
+
+.home {
+  overflow-x: hidden;
+}
+
+@media (max-width: 992px) {
+  .carousel-dots,
+  .carousel-progress {
+    width: min(100%, 360px) !important;
+  }
+
+  .hotels-grid > * {
+    flex: 0 0 min(320px, calc(100vw - 4rem));
+  }
+
+  .dining-carousel {
+    gap: 1rem;
+  }
+
+  .dining-arrow {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-container,
+  .hero-left,
+  .booking-widget,
+  .booking-widget.card,
+  .travel-content,
+  .app-content,
+  .offers-content {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero {
+    min-height: auto;
+  }
+
+  .carousel-nav {
+    left: 1rem;
+    right: 1rem;
+  }
+
+  .carousel-dots,
+  .carousel-progress {
+    width: min(100%, 280px) !important;
+  }
+
+  .hotel-info {
+    width: auto;
+    max-width: 88%;
+  }
+
+  .dining-carousel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dining-arrow {
+    align-self: center;
+  }
+
+  .app-buttons {
+    width: 100%;
+  }
+
+  .app-buttons > * {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .container-custom {
+    padding: 0 1rem;
+  }
+
+  .hero {
+    padding: 88px 1rem 56px;
+  }
+
+  .hero-left h1 {
+    font-size: 1.9rem;
+  }
+
+  .carousel-nav {
+    left: 1rem;
+    right: 1rem;
+    bottom: 20px;
+  }
+
+  .carousel-dots,
+  .carousel-progress {
+    width: min(100%, 220px) !important;
+  }
+
+  .carousel-dot {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.35rem;
+  }
+
+  .hotel-info {
+    max-width: 100%;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .dining-arrow {
+    width: 42px;
+    height: 42px;
   }
 }

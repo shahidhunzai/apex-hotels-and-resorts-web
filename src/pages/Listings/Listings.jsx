@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import Hero from '../../components/Hero/Hero';
 import PropertyCard from '../../components/PropertyCard/PropertyCard';
 import { fetchCms } from '../../services/cmsApi';
 import { fetchRoomAvailability } from '../../services/cmsApi';
 import './Listings.css';
-import BannerSection from '../../components/BannerSection/BannerSection';
+import { getRoomPricing } from '../../utils/roomPricing';
 
 const toSlug = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '-');
 
@@ -23,14 +24,14 @@ const hasResortMatch = (bookingResort, destinationResort) => {
   return a === b || a.includes(b) || b.includes(a);
 };
 
-const parsePrice = (value) => {
-  const numeric = Number(String(value || '').replace(/[^\d.]/g, ''));
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-};
-
-const formatPrice = (value) => {
-  const parsed = parsePrice(value);
-  return parsed ? parsed.toLocaleString('en-PK') : 'Contact';
+const cleanLines = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || '').trim()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value.split('\n').map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
 };
 
 const Listings = () => {
@@ -47,10 +48,12 @@ const Listings = () => {
     availability: 'all' // 'all', 'available', 'booked'
   });
   const [cmsDestinations, setCmsDestinations] = useState([]);
+  const [cmsPages, setCmsPages] = useState({ homePage: {}, listingsPage: {} });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [bookings, setBookings] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeSlide, setActiveSlide] = useState(1);
   const ROOMS_PER_PAGE = 6;
 
   useEffect(() => {
@@ -66,6 +69,7 @@ const Listings = () => {
         ]);
         if (!isMounted) return;
         setCmsDestinations(Array.isArray(cms?.destinations) ? cms.destinations : []);
+        setCmsPages({ homePage: cms?.homePage || {}, listingsPage: cms?.listingsPage || {} });
         setBookings(availability?.unavailableRooms || []);
         console.log('Unavailable rooms from API:', availability?.unavailableRooms);
       } catch (error) {
@@ -134,6 +138,7 @@ const Listings = () => {
         const roomImages = Array.isArray(room?.images) ? room.images.filter(Boolean) : [];
         const image = roomImages[0] || destination?.cardImage || destination?.heroSlides?.[0] || '';
         const quantity = Number.parseInt(room?.quantity, 10);
+        const pricing = getRoomPricing(room);
 
         const roomKey = getRoomKey(room?.title, destinationName);
         const hasActiveBooking = bookings.some((booking) => {
@@ -153,8 +158,12 @@ const Listings = () => {
           roomKey,
           title: room?.title || `${destinationName} Hotel Room`,
           location: destinationName,
-          price: formatPrice(room?.price),
-          priceValue: parsePrice(room?.price),
+          price: pricing.formattedDiscountedPrice,
+          originalPrice: pricing.formattedBasePrice,
+          priceValue: pricing.discountedPrice,
+          hasDiscount: pricing.hasDiscount,
+          discountPercent: pricing.discountPercent,
+          discountNote: pricing.discountNote,
           type: 'Hotel',
           beds: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
           persons: Number.parseInt(room?.persons, 10) || 1,
@@ -307,13 +316,23 @@ const Listings = () => {
     });
   };
 
+  const heroSlides = cleanLines(cmsPages.listingsPage?.heroSlides || []).length
+    ? cleanLines(cmsPages.listingsPage.heroSlides)
+    : cleanLines(cmsPages.homePage?.hero?.slides || []);
+  const heroTitle = cmsPages.listingsPage?.heroTitle || 'FIND YOUR\nPERFECT HOTEL';
+  const heroPhone = cmsPages.homePage?.hero?.phone || undefined;
+  const heroWhatsapp = cmsPages.homePage?.hero?.whatsapp || undefined;
+
   return (
     <div className="listings-page">
-      <BannerSection 
-        title="Find Your Perfect Hotel" 
-        subtitle={`${filteredProperties.length} hotels available${filters.availability === 'available' ? ' (Available)' : filters.availability === 'booked' ? ' (Booked)' : ''}`} 
+      <Hero
+        slides={heroSlides}
+        activeSlide={activeSlide}
+        setActiveSlide={setActiveSlide}
+        title={heroTitle}
+        phone={heroPhone}
+        whatsapp={heroWhatsapp}
       />
-
       <div className="container">
         <div className="listings-layout">
           {/* Filters Sidebar */}

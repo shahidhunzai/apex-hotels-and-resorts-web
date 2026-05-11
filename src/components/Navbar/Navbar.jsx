@@ -41,12 +41,14 @@ const Navbar = () => {
           <Link to="/destinations" onClick={() => setIsMenuOpen(false)}>HOTELS</Link>
           <Link to="/listings" onClick={() => setIsMenuOpen(false)}>DESTINATIONS</Link>
           {/* <Link to="/about" onClick={() => setIsMenuOpen(false)}>EVENTS</Link> */}
-          <Link to="/contact" onClick={() => setIsMenuOpen(false)}>GETAWAYS</Link>
+          <Link to="/contact" onClick={() => setIsMenuOpen(false)}>CONTACT</Link>
         </div>
 
         <div className="nav-actions">
           <button className="btn-login"><span className="user-icon">👤</span> SIGN IN</button>
-          <button className="btn-call">CALL US</button>
+          <Link to="/contact" className="btn-trip" onClick={() => setIsMenuOpen(false)}>
+            PLAN YOUR TRIP / TOUR
+          </Link>
         </div>
 
         <div className="hamburger" onClick={toggleMenu}>

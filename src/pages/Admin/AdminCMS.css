@@ -586,6 +586,25 @@
   gap: 4px;
 }
 
+.upload-field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-subsection {
+  padding: 14px;
+  background: #f3f8fc;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+}
+
+.section-note {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 .img-thumb img {
   width: 110px;
   height: 70px;

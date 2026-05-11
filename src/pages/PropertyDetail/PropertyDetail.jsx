@@ -3,19 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 import { fetchCms, fetchRoomAvailability } from '../../services/cmsApi';
 import BookingFormModal from '../../components/BookingFormModal/BookingFormModal';
 import BannerSection from '../../components/BannerSection/BannerSection';
+import { getRoomPricing } from '../../utils/roomPricing';
 import './PropertyDetail.css';
 
 const toSlug = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '-');
-
-const parsePrice = (value) => {
-  const numeric = Number(String(value || '').replace(/[^\d.]/g, ''));
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-};
-
-const formatPrice = (value) => {
-  const parsed = parsePrice(value);
-  return parsed ? parsed.toLocaleString('en-PK') : 'Contact';
-};
 
 const resolveRooms = (destination) => {
   if (Array.isArray(destination?.destinationRooms) && destination.destinationRooms.length > 0) {
@@ -97,12 +88,17 @@ const PropertyDetail = () => {
     const roomImages = getRoomImages(room);
     const fallbackImage = destination?.cardImage || destination?.heroSlides?.[0] || '';
     const quantity = Number.parseInt(room?.quantity, 10);
+    const pricing = getRoomPricing(room);
 
     return {
       id,
       title: room?.title || `${destination?.name || 'Hotel'} Room`,
       location: destination?.name || 'Unknown Destination',
-      price: formatPrice(room?.price),
+      price: pricing.formattedDiscountedPrice,
+      originalPrice: pricing.formattedBasePrice,
+      hasDiscount: pricing.hasDiscount,
+      discountPercent: pricing.discountPercent,
+      discountNote: pricing.discountNote,
       type: 'Hotel',
       beds: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
       persons: Number.parseInt(room?.persons, 10) || 1,
@@ -247,7 +243,9 @@ const PropertyDetail = () => {
               <p className="location">📍 {property.location}</p>
             </div>
             <div className="price-section">
-                <div className="price">PKR {property.price}<span>/month</span></div>
+                {property.hasDiscount && <div className="price-original">PKR {property.originalPrice}/day</div>}
+                <div className="price">PKR {property.price}<span>/day</span></div>
+                {property.hasDiscount && <div className="price-discount-note">{property.discountNote || `${property.discountPercent}% room discount applied`}</div>}
                 {isAvailable ? (
                   <button className="btn primary" onClick={() => setShowBookingForm(true)}>Book</button>
                 ) : (

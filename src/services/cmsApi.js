@@ -22,6 +22,11 @@ export const fetchHomePage = async () => {
   return data.homePage || {};
 };
 
+export const fetchGooglePlaceReviews = async (placeId) => {
+  const params = new URLSearchParams({ placeId: String(placeId || '').trim() });
+  return requestJson(`/api/google-reviews?${params.toString()}`, undefined, 'Failed to fetch Google reviews');
+};
+
 const getAdminHeaders = (token) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -65,11 +70,11 @@ export const fetchAdminBookings = async (token) => {
   }, 'Failed to fetch bookings');
 };
 
-export const updateBookingStatus = async (bookingId, status, token) => {
+export const updateBookingStatus = async (bookingId, status, token, options = {}) => {
   return requestJson(`/api/admin/bookings/${bookingId}/status`, {
     method: 'PATCH',
     headers: getAdminHeaders(token),
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, resendNotifications: Boolean(options.resendNotifications) }),
   }, 'Failed to update booking status');
 };
 

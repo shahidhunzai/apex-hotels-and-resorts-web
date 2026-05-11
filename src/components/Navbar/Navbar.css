@@ -85,7 +85,7 @@
 }
 
 .btn-login,
-.btn-call {
+.btn-trip {
   padding: 0.72rem 1.65rem;
   font-size: 1.02rem;
   font-weight: 600;
@@ -95,6 +95,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  text-decoration: none;
 }
 
 .user-icon {
@@ -112,13 +113,13 @@
   color: #333;
 }
 
-.btn-call {
+.btn-trip {
   background: transparent !important;
   color: white !important;
   border: 2px solid white !important;
 }
 
-.btn-call:hover {
+.btn-trip:hover {
   background: white !important;
   color: #333 !important;
 }
@@ -180,5 +181,68 @@
   .nav-links.active ~ .hamburger {
     position: relative;
     z-index: 1001;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.9rem 1rem;
+  }
+
+  .nav-wrapper {
+    gap: 0.75rem;
+  }
+
+  .logo {
+    min-width: 0;
+    max-width: calc(100% - 52px);
+  }
+
+  .logo-image {
+    max-height: 38px;
+    max-width: 120px;
+  }
+
+  .logo-text {
+    font-size: 0.92rem;
+    letter-spacing: 1px;
+    white-space: normal;
+  }
+
+  .nav-links.active {
+    top: 64px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    min-height: calc(100vh - 64px);
+    padding: 1.25rem 1rem 2rem;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0.8rem 0.75rem;
+  }
+
+  .logo-image {
+    max-height: 34px;
+    max-width: 104px;
+  }
+
+  .logo-text {
+    font-size: 0.82rem;
+    letter-spacing: 0.7px;
+  }
+
+  .nav-links.active {
+    top: 60px;
+    min-height: calc(100vh - 60px);
+    padding: 1rem 0.9rem 1.75rem;
+  }
+
+  .nav-links.active a {
+    font-size: 0.96rem;
   }
 }

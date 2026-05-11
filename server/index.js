@@ -145,10 +145,15 @@ const migrateJsonToMongoIfNeeded = async () => {
 
   const cmsCount = await CmsData.countDocuments();
   if (cmsCount === 0) {
-    const cms = readJsonObject(cmsFile, { destinations: [] });
+    const cms = readJsonObject(cmsFile, { destinations: [], homePage: {}, reviews: [], destinationsPage: {}, listingsPage: {}, getawaysPage: {} });
     await CmsData.create({
       key: 'main',
       destinations: Array.isArray(cms.destinations) ? cms.destinations : [],
+      homePage: cms.homePage && typeof cms.homePage === 'object' ? cms.homePage : {},
+      reviews: Array.isArray(cms.reviews) ? cms.reviews : [],
+      destinationsPage: cms.destinationsPage && typeof cms.destinationsPage === 'object' ? cms.destinationsPage : {},
+      listingsPage: cms.listingsPage && typeof cms.listingsPage === 'object' ? cms.listingsPage : {},
+      getawaysPage: cms.getawaysPage && typeof cms.getawaysPage === 'object' ? cms.getawaysPage : {},
     });
   }
 
@@ -266,6 +271,48 @@ const createGuestHtml = (data) => `
   </div>
 `;
 
+const createConfirmedGuestHtml = (data) => `
+  <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;background:#fff">
+    <div style="background:#2d3e50;padding:28px 20px;text-align:center">
+      <h2 style="color:#fff;margin:0">APEX Hotels and Resorts</h2>
+      <p style="color:#b7c2cc;margin:6px 0 0">Booking Confirmed</p>
+    </div>
+    <div style="padding:26px">
+      <p>Dear ${data.fullName},</p>
+      <p>
+        Your booking has been confirmed by our reservations team. We look forward to welcoming you to APEX Hotels and Resorts.
+      </p>
+      <p>
+        Please keep the details below for your reference.
+      </p>
+      <hr style="border:none;border-top:1px solid #eaeaea;margin:20px 0" />
+      <p style="margin:0;color:#666"><strong>Booking ID:</strong> ${data.bookingId}</p>
+      <p style="margin:6px 0;color:#666"><strong>Resort:</strong> ${data.resortName}</p>
+      <p style="margin:6px 0;color:#666"><strong>Room:</strong> ${data.roomName}</p>
+      <p style="margin:6px 0;color:#666"><strong>Check-in:</strong> ${data.dateFrom}</p>
+      <p style="margin:6px 0;color:#666"><strong>Check-out:</strong> ${data.dateTo}</p>
+      <p style="margin:6px 0;color:#666"><strong>Persons:</strong> ${data.persons}</p>
+      <p style="margin-top:20px">
+        If you need any help before arrival, reply to this email or contact our team at +92 333 3394078.
+      </p>
+      <p>
+        Warm regards,<br />
+        APEX Hotels and Resorts
+      </p>
+    </div>
+  </div>
+`;
+
+const sendConfirmedBookingEmail = async (booking) => {
+  await transporter.sendMail({
+    from: `APEX Hotels and Resorts <${process.env.FROM_EMAIL}>`,
+    to: booking.email,
+    replyTo: process.env.ADMIN_EMAIL,
+    subject: `Booking Confirmed - ${booking.roomName} (${booking.resortName})`,
+    html: createConfirmedGuestHtml(booking),
+  });
+};
+
 const createContactAdminHtml = (data) => `
   <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;background:#fff">
     <div style="background:#2d3e50;padding:20px;text-align:center">
@@ -351,11 +398,85 @@ app.get('/', (_req, res) => {
 app.get('/api/cms', (_req, res) => {
   CmsData.findOne({ key: 'main' })
     .lean()
-    .then((cms) => res.json({ destinations: cms?.destinations || [], homePage: cms?.homePage || {} }))
+    .then((cms) => res.json({
+      destinations: cms?.destinations || [],
+      homePage: cms?.homePage || {},
+      reviews: cms?.reviews || [],
+      destinationsPage: cms?.destinationsPage || {},
+      listingsPage: cms?.listingsPage || {},
+      getawaysPage: cms?.getawaysPage || {},
+    }))
     .catch((error) => {
       console.error('Failed to load CMS from MongoDB:', error);
       res.status(500).json({ error: 'Failed to load CMS data.' });
     });
+});
+
+app.get('/api/google-reviews', async (req, res) => {
+  const placeId = String(req.query?.placeId || '').trim();
+  const apiKey = String(process.env.GOOGLE_PLACES_API_KEY || '').trim();
+
+  if (!placeId) {
+    return res.status(400).json({ error: 'placeId is required.' });
+  }
+
+  if (!apiKey) {
+    return res.status(503).json({ error: 'Google Places API is not configured.' });
+  }
+
+  try {
+    const params = new URLSearchParams({
+      place_id: placeId,
+      fields: 'name,rating,user_ratings_total,reviews,url',
+      key: apiKey,
+    });
+
+    const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`);
+    const payload = await response.json();
+
+    if (!response.ok || payload?.status === 'REQUEST_DENIED' || payload?.status === 'INVALID_REQUEST') {
+      return res.status(502).json({ error: payload?.error_message || payload?.status || 'Failed to fetch Google reviews.' });
+    }
+
+    if (payload?.status && payload.status !== 'OK') {
+      return res.status(200).json({
+        placeId,
+        placeName: '',
+        rating: null,
+        userRatingsTotal: null,
+        googleMapsUrl: '',
+        reviews: [],
+        status: payload.status,
+      });
+    }
+
+    const result = payload?.result || {};
+    const reviews = Array.isArray(result.reviews)
+      ? result.reviews.map((item, index) => ({
+          id: `${placeId}-${index}`,
+          name: String(item?.author_name || 'Google User').trim(),
+          avatar: String(item?.profile_photo_url || '').trim(),
+          review: String(item?.text || '').trim(),
+          rating: Number(item?.rating) || null,
+          relativeTime: String(item?.relative_time_description || '').trim(),
+          authorUrl: String(item?.author_url || '').trim(),
+          source: 'google',
+        })).filter((item) => item.review)
+      : [];
+
+    return res.json({
+      placeId,
+      placeName: String(result?.name || '').trim(),
+      rating: Number(result?.rating) || null,
+      userRatingsTotal: Number(result?.user_ratings_total) || null,
+      googleMapsUrl: String(result?.url || '').trim(),
+      reviews,
+      status: payload?.status || 'OK',
+    });
+  } catch (error) {
+    console.error('Failed to fetch Google reviews:', error);
+    return res.status(500).json({ error: 'Failed to fetch Google reviews.' });
+  }
 });
 
 app.post('/api/admin/upload', authorizeAdmin, (req, res) => {
@@ -376,6 +497,10 @@ app.post('/api/admin/upload', authorizeAdmin, (req, res) => {
     'image/gif': 'gif',
     'image/avif': 'avif',
     'image/bmp': 'bmp',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
+    'image/heic-sequence': 'heic',
+    'image/heif-sequence': 'heif',
     'image/tiff': 'tiff',
     'image/svg+xml': 'svg',
     'image/x-icon': 'ico',
@@ -406,6 +531,18 @@ app.put('/api/admin/cms', authorizeAdmin, (req, res) => {
   if (cmsPayload.homePage && typeof cmsPayload.homePage === 'object') {
     update.homePage = cmsPayload.homePage;
   }
+  if (Array.isArray(cmsPayload.reviews)) {
+    update.reviews = cmsPayload.reviews;
+  }
+  if (cmsPayload.destinationsPage && typeof cmsPayload.destinationsPage === 'object') {
+    update.destinationsPage = cmsPayload.destinationsPage;
+  }
+  if (cmsPayload.listingsPage && typeof cmsPayload.listingsPage === 'object') {
+    update.listingsPage = cmsPayload.listingsPage;
+  }
+  if (cmsPayload.getawaysPage && typeof cmsPayload.getawaysPage === 'object') {
+    update.getawaysPage = cmsPayload.getawaysPage;
+  }
   if (Object.keys(update).length === 0) {
     return res.status(400).json({ error: 'No valid CMS fields provided.' });
   }
@@ -424,12 +561,24 @@ app.put('/api/admin/cms', authorizeAdmin, (req, res) => {
 app.post('/api/admin/seed', authorizeAdmin, async (_req, res) => {
   try {
     ensureMigrationFiles();
-    const cms = readJsonObject(cmsFile, { destinations: [], homePage: {} });
+    const cms = readJsonObject(cmsFile, { destinations: [], homePage: {}, reviews: [], destinationsPage: {}, listingsPage: {}, getawaysPage: {} });
     const update = {
       destinations: Array.isArray(cms.destinations) ? cms.destinations : [],
     };
     if (cms.homePage && typeof cms.homePage === 'object') {
       update.homePage = cms.homePage;
+    }
+    if (Array.isArray(cms.reviews)) {
+      update.reviews = cms.reviews;
+    }
+    if (cms.destinationsPage && typeof cms.destinationsPage === 'object') {
+      update.destinationsPage = cms.destinationsPage;
+    }
+    if (cms.listingsPage && typeof cms.listingsPage === 'object') {
+      update.listingsPage = cms.listingsPage;
+    }
+    if (cms.getawaysPage && typeof cms.getawaysPage === 'object') {
+      update.getawaysPage = cms.getawaysPage;
     }
     await CmsData.findOneAndUpdate(
       { key: 'main' },
@@ -471,47 +620,67 @@ app.get('/api/admin/bookings', authorizeAdmin, (_req, res) => {
     });
 });
 
-app.patch('/api/admin/bookings/:id/status', authorizeAdmin, (req, res) => {
+app.patch('/api/admin/bookings/:id/status', authorizeAdmin, async (req, res) => {
   const { id } = req.params;
   const status = String(req.body?.status || '').trim().toLowerCase();
+  const resendNotifications = req.body?.resendNotifications === true || req.body?.resendNotifications === 'true';
 
   if (!status) {
     return res.status(400).json({ error: 'status is required.' });
   }
 
-  return Booking.findOneAndUpdate(
-    { bookingId: id },
-    { $set: { status } },
-    { returnDocument: 'after' }
-  )
-    .lean()
-    .then((updated) => {
-      if (!updated) {
-        return res.status(404).json({ error: 'Booking not found.' });
+  try {
+    const existing = await Booking.findOne({ bookingId: id }).lean();
+    if (!existing) {
+      return res.status(404).json({ error: 'Booking not found.' });
+    }
+
+    const updated = await Booking.findOneAndUpdate(
+      { bookingId: id },
+      { $set: { status } },
+      { returnDocument: 'after' }
+    ).lean();
+
+    let notifications = {
+      confirmationEmailSent: false,
+    };
+
+    if (updated && updated.status === 'confirmed' && (existing.status !== 'confirmed' || resendNotifications)) {
+      try {
+        await sendConfirmedBookingEmail(updated);
+        notifications.confirmationEmailSent = true;
+      } catch (emailError) {
+        console.error(`Failed to send booking confirmation email for ${updated.bookingId}:`, emailError);
+        notifications = {
+          confirmationEmailSent: false,
+          emailError: emailError?.message || 'Failed to send confirmation email.',
+        };
       }
-      return res.json({
-        booking: {
-          id: updated.bookingId,
-          bookingId: updated.bookingId,
-          fullName: updated.fullName,
-          email: updated.email,
-          mobile: updated.mobile,
-          dateFrom: updated.dateFrom,
-          dateTo: updated.dateTo,
-          persons: updated.persons,
-          roomName: updated.roomName,
-          resortName: updated.resortName,
-          status: updated.status,
-          error: updated.error,
-          createdAt: updated.createdAt,
-          updatedAt: updated.updatedAt,
-        },
-      });
-    })
-    .catch((error) => {
-      console.error('Failed to update booking status in MongoDB:', error);
-      res.status(500).json({ error: 'Failed to update booking status.' });
+    }
+
+    return res.json({
+      booking: {
+        id: updated.bookingId,
+        bookingId: updated.bookingId,
+        fullName: updated.fullName,
+        email: updated.email,
+        mobile: updated.mobile,
+        dateFrom: updated.dateFrom,
+        dateTo: updated.dateTo,
+        persons: updated.persons,
+        roomName: updated.roomName,
+        resortName: updated.resortName,
+        status: updated.status,
+        error: updated.error,
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+      },
+      notifications,
     });
+  } catch (error) {
+    console.error('Failed to update booking status in MongoDB:', error);
+    return res.status(500).json({ error: 'Failed to update booking status.' });
+  }
 });
 
 app.patch('/api/admin/bookings/:id', authorizeAdmin, (req, res) => {

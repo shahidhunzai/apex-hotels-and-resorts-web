@@ -26,12 +26,18 @@ const PropertyCard = ({ property }) => {
 
         <div className="property-footer">
           <div className="property-price">
+            {property.hasDiscount && <span className="price-original">PKR {property.originalPrice}</span>}
             <span className="price-label">PKR</span>
             <span className="price-value">{property.price}</span>
             <span className="price-period">/day</span>
           </div>
           <button className="btn-details">View Details</button>
         </div>
+        {property.hasDiscount && (
+          <div className="property-discount-note">
+            {property.discountNote || `${property.discountPercent}% off on this room`}
+          </div>
+        )}
       </div>
     </Link>
   );

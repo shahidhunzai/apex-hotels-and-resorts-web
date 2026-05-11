@@ -149,4 +149,23 @@
     grid-column: span 1;
     grid-row: span 1;
   }
+
+  .locations-section {
+    padding: 56px 0 72px;
+  }
+
+  .locations-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-arrows .nav-arrow {
+    width: 44px;
+    height: 44px;
+  }
+
+  .hotel-info {
+    max-width: 100%;
+    padding: 0.65rem 0.8rem;
+  }
 }

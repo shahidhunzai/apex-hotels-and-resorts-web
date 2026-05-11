@@ -4,7 +4,6 @@ import './ContactSection.css';
 const ContactSection = ({ data }) => {
   const phone = data?.phone || '+92-3-111-444-100';
   const email = data?.email || 'reservations@roomy.pk';
-  const social = data?.social || {};
   const formTitle = data?.formTitle || "WE'RE HERE TO HELP YOU";
 
   const [formData, setFormData] = useState({
@@ -16,13 +15,6 @@ const ContactSection = ({ data }) => {
   });
   const [status, setStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const socialLinks = [
-    { key: 'facebook', label: 'Facebook', url: social.facebook, icon: '📘' },
-    { key: 'instagram', label: 'Instagram', url: social.instagram, icon: '📸' },
-    { key: 'twitter', label: 'Twitter', url: social.twitter, icon: '🐦' },
-    { key: 'whatsapp', label: 'WhatsApp', url: social.whatsapp, icon: '💬' },
-  ].filter((item) => item.url && item.url.trim());
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -70,21 +62,6 @@ const ContactSection = ({ data }) => {
             <div className="contact-info-phone">Phone: <a href={`tel:${phone.replace(/[^+0-9]/g, '')}`}>{phone}</a></div>
             <div className="contact-info-email">Email: <a href={`mailto:${email}`}>{email}</a></div>
           </div>
-          {socialLinks.length > 0 && (
-            <div className="contact-social-links">
-              {socialLinks.map((item) => (
-                <a
-                  key={item.key}
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="social-link"
-                >
-                  <span>{item.icon}</span> {item.label}
-                </a>
-              ))}
-            </div>
-          )}
           <div className="contact-blue-bar" />
         </div>
         <div className="contact-form-card contact-form-card-large">

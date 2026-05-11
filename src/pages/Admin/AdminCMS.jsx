@@ -4,8 +4,8 @@ import {
   fetchAdminBookings,
   fetchCms,
   seedCms,
-  updateBookingStatus,
   updateBooking,
+  updateBookingStatus,
   updateCms,
 } from '../../services/cmsApi';
 import './AdminCMS.css';
@@ -60,6 +60,7 @@ const getDestinationContentState = (destination) => {
       ? (destination?.destinationInfoTitle || destination?.name || '')
       : (destination?.destinationInfoTitle || destination?.name || fallbackTabs.infoTitle || ''),
     infoDescription: resolveValue(destination?.destinationInfoDescription, fallbackTabs.infoDescription, ''),
+    mapEmbed: resolveValue(destination?.destinationMapEmbed, '', ''),
     infoBullets: resolveValue(destination?.destinationInfoBullets, fallbackTabs.infoBullets, []),
     infoGallery: resolveValue(destination?.destinationInfoGallery, fallbackTabs.infoGallery, []),
     rooms: resolveValue(destination?.destinationRooms, fallbackTabs.rooms, []),
@@ -72,6 +73,18 @@ const getDestinationContentState = (destination) => {
 };
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // 4 MB
+const IMAGE_INPUT_ACCEPT = 'image/*,.heic,.heif,image/heic,image/heif';
+
+const isHeicFile = (file) => {
+  const name = String(file?.name || '').toLowerCase();
+  const type = String(file?.type || '').toLowerCase();
+  return type === 'image/heic'
+    || type === 'image/heif'
+    || type === 'image/heic-sequence'
+    || type === 'image/heif-sequence'
+    || name.endsWith('.heic')
+    || name.endsWith('.heif');
+};
 
 const getBase64SizeMb = (dataUrl) => {
   if (!dataUrl || !dataUrl.startsWith('data:')) return '';
@@ -109,16 +122,33 @@ const compressImageFile = (file) => new Promise((resolve, reject) => {
   img.src = objectUrl;
 });
 
+const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+  if (file.size > MAX_IMAGE_BYTES) {
+    return reject(new Error(`"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB — each image must be 4 MB or smaller.`));
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result || ''));
+  reader.onerror = () => reject(new Error(`Failed to read "${file.name}".`));
+  reader.readAsDataURL(file);
+});
+
+const prepareImageUpload = (file) => (isHeicFile(file) ? readFileAsDataUrl(file) : compressImageFile(file));
+
 /* ── NAV_ITEMS ─────────────────────────────────────── */
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊' },
   { id: 'home-hero', label: 'Hero Section', icon: '🖼️' },
+  { id: 'listings-hero', label: 'Listings Hero', icon: '🏨' },
+  { id: 'getaways-hero', label: 'Getaways Hero', icon: '🧳' },
   { id: 'home-travel', label: 'Travel Section', icon: '✈️' },
   { id: 'home-locations', label: 'Our Locations', icon: '📍' },
   { id: 'home-dining', label: 'Dine In', icon: '🍽️' },
   { id: 'home-offers', label: 'Offers Banner', icon: '🏷️' },
   { id: 'home-app', label: 'App Section', icon: '📱' },
   { id: 'home-contact', label: 'Contact Info', icon: '📞' },
+  { id: 'home-footer-menu', label: 'Footer Menu', icon: '📚' },
+  { id: 'home-footer-reviews', label: 'Footer Reviews', icon: '⭐' },
   { id: 'destinations', label: 'Destinations', icon: '🏔️' },
   { id: 'bookings', label: 'Bookings', icon: '📋' },
 ];
@@ -133,7 +163,7 @@ const AdminCMS = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [cmsData, setCmsData] = useState({ destinations: [], homePage: {} });
+  const [cmsData, setCmsData] = useState({ destinations: [], homePage: {}, destinationsPage: {}, listingsPage: {}, getawaysPage: {} });
   const [bookings, setBookings] = useState([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState('');
   const [selectedPointId, setSelectedPointId] = useState('');
@@ -155,6 +185,9 @@ const AdminCMS = () => {
 
   /* ── helpers ───────────────────────────────────── */
   const homePage = cmsData.homePage || {};
+  const destinationsPage = cmsData.destinationsPage || {};
+  const listingsPage = cmsData.listingsPage || {};
+  const getawaysPage = cmsData.getawaysPage || {};
   const adminBrandLogo = homePage.brandLogo || brandLogo || '';
   const destinations = cmsData.destinations || [];
   const formatDateLocal = (date) => {
@@ -185,6 +218,36 @@ const AdminCMS = () => {
     }));
   }, []);
 
+  const patchDestinationsPage = useCallback((field, value) => {
+    setCmsData((prev) => ({
+      ...prev,
+      destinationsPage: {
+        ...(prev.destinationsPage || {}),
+        [field]: value,
+      },
+    }));
+  }, []);
+
+  const patchListingsPage = useCallback((field, value) => {
+    setCmsData((prev) => ({
+      ...prev,
+      listingsPage: {
+        ...(prev.listingsPage || {}),
+        [field]: value,
+      },
+    }));
+  }, []);
+
+  const patchGetawaysPage = useCallback((field, value) => {
+    setCmsData((prev) => ({
+      ...prev,
+      getawaysPage: {
+        ...(prev.getawaysPage || {}),
+        [field]: value,
+      },
+    }));
+  }, []);
+
   /* ── load dashboard ────────────────────────────── */
   const loadDashboard = useCallback(async (authToken) => {
     setLoading(true);
@@ -206,7 +269,13 @@ const AdminCMS = () => {
       const cms = cmsResult.value;
       const bookingsPayload = bookingsResult.status === 'fulfilled' ? bookingsResult.value : { bookings: [] };
 
-      setCmsData({ destinations: cms?.destinations || [], homePage: cms?.homePage || {} });
+      setCmsData({
+        destinations: cms?.destinations || [],
+        homePage: cms?.homePage || {},
+        destinationsPage: cms?.destinationsPage || {},
+        listingsPage: cms?.listingsPage || {},
+        getawaysPage: cms?.getawaysPage || {},
+      });
       setBookings(bookingsPayload?.bookings || []);
 
       const dests = cms?.destinations || [];
@@ -284,7 +353,7 @@ const AdminCMS = () => {
   };
 
   const uploadImage = async (file) => {
-    const base64 = await compressImageFile(file);
+    const base64 = await prepareImageUpload(file);
     const result = await fetch('/api/admin/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -304,6 +373,107 @@ const AdminCMS = () => {
       throw new Error(payload.error || raw || fallback);
     }
     return payload.url;
+  };
+
+  const uploadImages = async (files) => {
+    const list = Array.from(files || []).filter(Boolean);
+    if (list.length === 0) return [];
+    return Promise.all(list.map(uploadImage));
+  };
+
+  const handleHomeHeroSlidesUpload = async (files) => {
+    if (!files?.length) return;
+    try {
+      const uploaded = await uploadImages(files);
+      const current = cleanLines((homePage.hero || {}).slides || []);
+      patchHomeNested('hero', 'slides', [...current, ...uploaded]);
+    } catch (err) {
+      setError(err.message || 'Unable to upload hero slides.');
+    }
+  };
+
+  const removeHomeHeroSlideAt = (idx) => {
+    const current = cleanLines((homePage.hero || {}).slides || []);
+    patchHomeNested('hero', 'slides', current.filter((_, i) => i !== idx));
+  };
+
+  const handleHomeSectionImageUpload = async (section, field, file, fallbackMessage) => {
+    if (!file) return;
+    try {
+      const imageUrl = await uploadImage(file);
+      patchHomeNested(section, field, imageUrl);
+    } catch (err) {
+      setError(err.message || fallbackMessage);
+    }
+  };
+
+  const handleHomeCollectionImageUpload = async (collectionKey, idx, file, fallbackMessage) => {
+    if (!file) return;
+    try {
+      const imageUrl = await uploadImage(file);
+      const items = homePage[collectionKey] || [];
+      patchHome(collectionKey, items.map((item, itemIdx) => itemIdx === idx ? { ...item, image: imageUrl } : item));
+    } catch (err) {
+      setError(err.message || fallbackMessage);
+    }
+  };
+
+  const handleBrandLogoUpload = async (file) => {
+    if (!file) return;
+    try {
+      const imageUrl = await uploadImage(file);
+      patchHome('brandLogo', imageUrl);
+    } catch (err) {
+      setError(err.message || 'Failed to upload logo.');
+    }
+  };
+
+  const handleDestinationsPageHeroSlidesUpload = async (files) => {
+    if (!files?.length) return;
+    try {
+      const uploaded = await uploadImages(files);
+      const current = cleanLines(destinationsPage.heroSlides || []);
+      patchDestinationsPage('heroSlides', [...current, ...uploaded]);
+    } catch (err) {
+      setError(err.message || 'Unable to upload destinations page hero slides.');
+    }
+  };
+
+  const removeDestinationsPageHeroSlideAt = (idx) => {
+    const current = cleanLines(destinationsPage.heroSlides || []);
+    patchDestinationsPage('heroSlides', current.filter((_, i) => i !== idx));
+  };
+
+  const handleListingsPageHeroSlidesUpload = async (files) => {
+    if (!files?.length) return;
+    try {
+      const uploaded = await uploadImages(files);
+      const current = cleanLines(listingsPage.heroSlides || []);
+      patchListingsPage('heroSlides', [...current, ...uploaded]);
+    } catch (err) {
+      setError(err.message || 'Unable to upload listings page hero slides.');
+    }
+  };
+
+  const removeListingsPageHeroSlideAt = (idx) => {
+    const current = cleanLines(listingsPage.heroSlides || []);
+    patchListingsPage('heroSlides', current.filter((_, i) => i !== idx));
+  };
+
+  const handleGetawaysPageHeroSlidesUpload = async (files) => {
+    if (!files?.length) return;
+    try {
+      const uploaded = await uploadImages(files);
+      const current = cleanLines(getawaysPage.heroSlides || []);
+      patchGetawaysPage('heroSlides', [...current, ...uploaded]);
+    } catch (err) {
+      setError(err.message || 'Unable to upload getaways page hero slides.');
+    }
+  };
+
+  const removeGetawaysPageHeroSlideAt = (idx) => {
+    const current = cleanLines(getawaysPage.heroSlides || []);
+    patchGetawaysPage('heroSlides', current.filter((_, i) => i !== idx));
   };
 
   const handleDestinationCardImageUpload = async (file) => {
@@ -326,6 +496,42 @@ const AdminCMS = () => {
     }
   };
 
+  const handleDestinationHeroSlidesUpload = async (files) => {
+    if (!selectedDestination || !files?.length) return;
+    try {
+      const uploaded = await uploadImages(files);
+      const current = cleanLines(selectedDestination.heroSlides || []);
+      patchDestination(selectedDestination.id, (d) => ({ ...d, heroSlides: [...current, ...uploaded] }));
+    } catch (err) {
+      setError(err.message || 'Unable to upload destination hero slides.');
+    }
+  };
+
+  const removeDestinationHeroSlideAt = (idx) => {
+    if (!selectedDestination) return;
+    const current = cleanLines(selectedDestination.heroSlides || []);
+    patchDestination(selectedDestination.id, (d) => ({ ...d, heroSlides: current.filter((_, i) => i !== idx) }));
+  };
+
+  const handlePointHeroSlidesUpload = async (pointId, files) => {
+    if (!selectedDestination || !pointId || !files?.length) return;
+    try {
+      const uploaded = await uploadImages(files);
+      const point = (selectedDestination.points || []).find((entry) => entry.id === pointId);
+      const current = cleanLines(point?.heroSlides || []);
+      patchPoint(selectedDestination.id, pointId, (p) => ({ ...p, heroSlides: [...current, ...uploaded] }));
+    } catch (err) {
+      setError(err.message || 'Unable to upload point hero slides.');
+    }
+  };
+
+  const removePointHeroSlideAt = (pointId, idx) => {
+    if (!selectedDestination || !pointId) return;
+    const point = (selectedDestination.points || []).find((entry) => entry.id === pointId);
+    const current = cleanLines(point?.heroSlides || []);
+    patchPoint(selectedDestination.id, pointId, (p) => ({ ...p, heroSlides: current.filter((_, i) => i !== idx) }));
+  };
+
   const addDestination = () => {
     const id = `destination-${Date.now()}`;
     setCmsData((prev) => ({
@@ -339,6 +545,7 @@ const AdminCMS = () => {
         destinationContentInitialized: false,
         destinationInfoTitle: '',
         destinationInfoDescription: '',
+        destinationMapEmbed: '',
         destinationInfoBullets: [],
         destinationInfoGallery: [],
         destinationRooms: [],
@@ -414,7 +621,7 @@ const AdminCMS = () => {
   const uploadDestinationInfoImages = async (files) => {
     if (!selectedDestination || !files?.length) return;
     try {
-      const uploaded = await Promise.all(Array.from(files).map(uploadImage));
+      const uploaded = await uploadImages(files);
       const current = cleanLines(destinationContent.infoGallery || []);
       patchDestinationContentField('destinationInfoGallery', [...current, ...uploaded]);
     } catch (err) {
@@ -431,7 +638,7 @@ const AdminCMS = () => {
   const uploadDestinationTabImages = async (field, files) => {
     if (!selectedDestination || !files?.length) return;
     try {
-      const uploaded = await Promise.all(Array.from(files).map(uploadImage));
+      const uploaded = await uploadImages(files);
       const current = cleanLines(destinationContent[field] || []);
       patchDestinationContentField(field, [...current, ...uploaded]);
     } catch (err) {
@@ -447,7 +654,7 @@ const AdminCMS = () => {
   const uploadRoomImages = async (roomIdx, files) => {
     if (!files?.length) return;
     try {
-      const uploaded = await Promise.all(Array.from(files).map(uploadImage));
+      const uploaded = await uploadImages(files);
       const rooms = destinationContent.rooms || [];
       const current = cleanLines(Array.isArray(rooms[roomIdx]?.images) ? rooms[roomIdx].images : (rooms[roomIdx]?.image ? [rooms[roomIdx].image] : []));
       updateRoom(roomIdx, 'images', [...current, ...uploaded]);
@@ -474,7 +681,7 @@ const AdminCMS = () => {
 
   // rooms
   const addRoom = () => {
-    const rooms = [...(destinationContent.rooms || []), { images: [], title: '', price: '', quantity: '', persons: '', area: '', amenities: [] }];
+    const rooms = [...(destinationContent.rooms || []), { images: [], title: '', price: '', discountPercent: '', discountNote: '', quantity: '', persons: '', area: '', amenities: [] }];
     patchDestinationContentField('destinationRooms', rooms);
   };
   const removeRoom = (idx) => patchDestinationContentField('destinationRooms', (destinationContent.rooms || []).filter((_, i) => i !== idx));
@@ -567,9 +774,21 @@ const AdminCMS = () => {
 
   const handleBookingStatus = async (bookingId, val) => {
     try {
-      await updateBookingStatus(bookingId, val, token);
+      const result = await updateBookingStatus(bookingId, val, token, {
+        resendNotifications: val === 'confirmed',
+      });
       setBookings((prev) => prev.map((b) => b.bookingId === bookingId ? { ...b, status: val } : b));
-      setStatus('Booking status updated.');
+      if (val === 'confirmed') {
+        const emailSent = Boolean(result?.notifications?.confirmationEmailSent);
+
+        const nextStatus = emailSent
+          ? 'Booking confirmed and confirmation email sent.'
+          : 'Booking confirmed. Confirmation email was not sent.';
+
+        setStatus(nextStatus);
+      } else {
+        setStatus('Booking status updated.');
+      }
       setError('');
     } catch (err) { setError(err.message); }
   };
@@ -644,7 +863,7 @@ const AdminCMS = () => {
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
     setToken('');
-    setCmsData({ destinations: [], homePage: {} });
+    setCmsData({ destinations: [], homePage: {}, destinationsPage: {}, listingsPage: {}, getawaysPage: {} });
     setBookings([]);
     setActiveNav('dashboard');
   };
@@ -723,14 +942,22 @@ const AdminCMS = () => {
             <label>WhatsApp Number</label>
             <input value={hero.whatsapp || ''} onChange={(e) => patchHomeNested('hero', 'whatsapp', e.target.value)} placeholder="+923001234567" />
           </div>
-          <div className="form-group full">
-            <label>Hero Slides (one image URL per line)</label>
-            <textarea rows={6} value={joinLines(hero.slides || [])} onChange={(e) => patchHomeNested('hero', 'slides', splitLines(e.target.value))} placeholder="https://images.unsplash.com/..." />
+          <div className="form-group full upload-field-stack">
+            <label>Hero Slides Upload</label>
+            <input
+              type="file"
+              accept={IMAGE_INPUT_ACCEPT}
+              multiple
+              onChange={async (e) => {
+                await handleHomeHeroSlidesUpload(e.target.files);
+                e.target.value = '';
+              }}
+            />
           </div>
-          {(hero.slides || []).length > 0 && (
+          {cleanLines(hero.slides || []).length > 0 && (
             <div className="image-preview-grid full">
               {cleanLines(hero.slides).map((url, i) => (
-                <div key={i} className="img-thumb"><img src={url} alt={`Slide ${i + 1}`} /><span>Slide {i + 1}</span></div>
+                <div key={i} className="img-thumb"><img src={url} alt={`Slide ${i + 1}`} /><span>Slide {i + 1}</span><button className="btn-icon danger small" type="button" onClick={() => removeHomeHeroSlideAt(i)} title="Remove slide">✕</button></div>
               ))}
             </div>
           )}
@@ -738,6 +965,70 @@ const AdminCMS = () => {
       </div>
     );
   };
+
+  const renderListingsHeroSection = () => (
+    <div className="panel-section">
+      <h2 className="section-title">🏨 Listings Hero</h2>
+      <p className="section-desc">Manage the hero title and slider images shown at the top of the Listings page.</p>
+      <div className="form-grid">
+        <div className="form-group full">
+          <label>Hero Title</label>
+          <textarea rows={3} value={listingsPage.heroTitle || ''} onChange={(e) => patchListingsPage('heroTitle', e.target.value)} placeholder="FIND YOUR\nPERFECT HOTEL" />
+        </div>
+        <div className="form-group full upload-field-stack">
+          <label>Hero Slides Upload</label>
+          <input
+            type="file"
+            accept={IMAGE_INPUT_ACCEPT}
+            multiple
+            onChange={async (e) => {
+              await handleListingsPageHeroSlidesUpload(e.target.files);
+              e.target.value = '';
+            }}
+          />
+        </div>
+        {cleanLines(listingsPage.heroSlides || []).length > 0 && (
+          <div className="image-preview-grid full">
+            {cleanLines(listingsPage.heroSlides).map((url, i) => (
+              <div key={`listings-page-slide-${i}`} className="img-thumb"><img src={url} alt={`Listings page slide ${i + 1}`} /><span>Slide {i + 1}</span><button className="btn-icon danger small" type="button" onClick={() => removeListingsPageHeroSlideAt(i)} title="Remove slide">✕</button></div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderGetawaysHeroSection = () => (
+    <div className="panel-section">
+      <h2 className="section-title">🧳 Getaways Hero</h2>
+      <p className="section-desc">Manage the hero title and slider images shown at the top of the Getaways page.</p>
+      <div className="form-grid">
+        <div className="form-group full">
+          <label>Hero Title</label>
+          <textarea rows={3} value={getawaysPage.heroTitle || ''} onChange={(e) => patchGetawaysPage('heroTitle', e.target.value)} placeholder="PLAN YOUR\nTRIP / TOUR" />
+        </div>
+        <div className="form-group full upload-field-stack">
+          <label>Hero Slides Upload</label>
+          <input
+            type="file"
+            accept={IMAGE_INPUT_ACCEPT}
+            multiple
+            onChange={async (e) => {
+              await handleGetawaysPageHeroSlidesUpload(e.target.files);
+              e.target.value = '';
+            }}
+          />
+        </div>
+        {cleanLines(getawaysPage.heroSlides || []).length > 0 && (
+          <div className="image-preview-grid full">
+            {cleanLines(getawaysPage.heroSlides).map((url, i) => (
+              <div key={`getaways-page-slide-${i}`} className="img-thumb"><img src={url} alt={`Getaways page slide ${i + 1}`} /><span>Slide {i + 1}</span><button className="btn-icon danger small" type="button" onClick={() => removeGetawaysPageHeroSlideAt(i)} title="Remove slide">✕</button></div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   const renderTravelSection = () => {
     const travel = homePage.travel || {};
@@ -758,9 +1049,21 @@ const AdminCMS = () => {
             <label>Button Text</label>
             <input value={travel.buttonText || ''} onChange={(e) => patchHomeNested('travel', 'buttonText', e.target.value)} />
           </div>
-          <div className="form-group">
-            <label>Image URL</label>
-            <input value={travel.image || ''} onChange={(e) => patchHomeNested('travel', 'image', e.target.value)} />
+          <div className="form-group upload-field-stack">
+            <label>Upload Image</label>
+            <input
+              type="file"
+              accept={IMAGE_INPUT_ACCEPT}
+              onChange={async (e) => {
+                await handleHomeSectionImageUpload('travel', 'image', e.target.files?.[0], 'Unable to upload travel image.');
+                e.target.value = '';
+              }}
+            />
+            {!!travel.image && (
+              <button className="btn small outline" type="button" onClick={() => patchHomeNested('travel', 'image', '')}>
+                Remove Current Image
+              </button>
+            )}
           </div>
           {travel.image && (
             <div className="image-preview-grid full">
@@ -796,7 +1099,22 @@ const AdminCMS = () => {
               <div className="form-grid compact">
                 <div className="form-group"><label>Name</label><input value={loc.name || ''} onChange={(e) => updateLoc(idx, 'name', e.target.value)} /></div>
                 <div className="form-group"><label>Location</label><input value={loc.location || ''} onChange={(e) => updateLoc(idx, 'location', e.target.value)} /></div>
-                <div className="form-group full"><label>Image URL</label><input value={loc.image || ''} onChange={(e) => updateLoc(idx, 'image', e.target.value)} /></div>
+                <div className="form-group full upload-field-stack">
+                  <label>Upload Image</label>
+                  <input
+                    type="file"
+                    accept={IMAGE_INPUT_ACCEPT}
+                    onChange={async (e) => {
+                      await handleHomeCollectionImageUpload('locations', idx, e.target.files?.[0], 'Unable to upload location image.');
+                      e.target.value = '';
+                    }}
+                  />
+                  {!!loc.image && (
+                    <button className="btn small outline" type="button" onClick={() => updateLoc(idx, 'image', '')}>
+                      Remove Current Image
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -829,7 +1147,22 @@ const AdminCMS = () => {
               <div className="form-grid compact">
                 <div className="form-group"><label>Name</label><input value={item.name || ''} onChange={(e) => updateItem(idx, 'name', e.target.value)} /></div>
                 <div className="form-group"><label>Subtitle</label><input value={item.description || ''} onChange={(e) => updateItem(idx, 'description', e.target.value)} /></div>
-                <div className="form-group full"><label>Image URL</label><input value={item.image || ''} onChange={(e) => updateItem(idx, 'image', e.target.value)} /></div>
+                <div className="form-group full upload-field-stack">
+                  <label>Upload Image</label>
+                  <input
+                    type="file"
+                    accept={IMAGE_INPUT_ACCEPT}
+                    onChange={async (e) => {
+                      await handleHomeCollectionImageUpload('dining', idx, e.target.files?.[0], 'Unable to upload dining image.');
+                      e.target.value = '';
+                    }}
+                  />
+                  {!!item.image && (
+                    <button className="btn small outline" type="button" onClick={() => updateItem(idx, 'image', '')}>
+                      Remove Current Image
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -875,33 +1208,192 @@ const AdminCMS = () => {
         <h2 className="section-title">📞 Contact Info</h2>
         <p className="section-desc">Update contact details shown on the homepage.</p>
         <div className="form-grid">
-          <div className="form-group full"><label>Brand Logo URL</label><input value={homePage.brandLogo || ''} onChange={(e) => patchHome('brandLogo', e.target.value)} placeholder="https://" /></div>
-          <div className="form-group full">
+          <div className="form-group full upload-field-stack">
             <label>Upload Brand Logo</label>
             <input
               type="file"
-              accept="image/*"
+              accept={IMAGE_INPUT_ACCEPT}
               onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                try {
-                  const imageUrl = await uploadImage(file);
-                  patchHome('brandLogo', imageUrl);
-                } catch (err) {
-                  setError(err.message || 'Failed to upload logo.');
-                } finally {
-                  e.target.value = '';
-                }
+                await handleBrandLogoUpload(e.target.files?.[0]);
+                e.target.value = '';
               }}
             />
+            {!!homePage.brandLogo && (
+              <button className="btn small outline" type="button" onClick={() => patchHome('brandLogo', '')}>
+                Remove Current Logo
+              </button>
+            )}
           </div>
+          {homePage.brandLogo && (
+            <div className="image-preview-grid full">
+              <div className="img-thumb large"><img src={homePage.brandLogo} alt="Brand logo" /></div>
+            </div>
+          )}
           <div className="form-group"><label>Phone</label><input value={contact.phone || ''} onChange={(e) => patchHomeNested('contact', 'phone', e.target.value)} /></div>
           <div className="form-group"><label>Email</label><input value={contact.email || ''} onChange={(e) => patchHomeNested('contact', 'email', e.target.value)} /></div>
           <div className="form-group"><label>WhatsApp URL</label><input value={(contact.social || {}).whatsapp || ''} onChange={(e) => patchHomeNested('contact', 'social', { ...(contact.social || {}), whatsapp: e.target.value })} /></div>
           <div className="form-group"><label>Facebook URL</label><input value={(contact.social || {}).facebook || ''} onChange={(e) => patchHomeNested('contact', 'social', { ...(contact.social || {}), facebook: e.target.value })} /></div>
           <div className="form-group"><label>Instagram URL</label><input value={(contact.social || {}).instagram || ''} onChange={(e) => patchHomeNested('contact', 'social', { ...(contact.social || {}), instagram: e.target.value })} /></div>
           <div className="form-group"><label>Twitter URL</label><input value={(contact.social || {}).twitter || ''} onChange={(e) => patchHomeNested('contact', 'social', { ...(contact.social || {}), twitter: e.target.value })} /></div>
+          <div className="form-group"><label>LinkedIn URL</label><input value={(contact.social || {}).linkedin || ''} onChange={(e) => patchHomeNested('contact', 'social', { ...(contact.social || {}), linkedin: e.target.value })} /></div>
           <div className="form-group full"><label>Form Heading</label><input value={contact.formTitle || ''} onChange={(e) => patchHomeNested('contact', 'formTitle', e.target.value)} /></div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFooterReviews = () => {
+    const reviews = Array.isArray(homePage.footerReviews) ? homePage.footerReviews : [];
+
+    const patchReview = (idx, field, value) => {
+      patchHome('footerReviews', reviews.map((item, itemIdx) => (
+        itemIdx === idx ? { ...item, [field]: value } : item
+      )));
+    };
+
+    const addReview = () => {
+      patchHome('footerReviews', [
+        ...reviews,
+        {
+          id: `footer-review-${Date.now()}`,
+          name: '',
+          description: '',
+          image: '',
+          stars: 5,
+          published: true,
+        },
+      ]);
+    };
+
+    const removeReview = (idx) => {
+      patchHome('footerReviews', reviews.filter((_, itemIdx) => itemIdx !== idx));
+    };
+
+    const uploadReviewImage = async (idx, file) => {
+      if (!file) return;
+      try {
+        const imageUrl = await uploadImage(file);
+        patchReview(idx, 'image', imageUrl);
+      } catch (err) {
+        setError(err.message || 'Unable to upload review image.');
+      }
+    };
+
+    return (
+      <div className="panel-section">
+        <h2 className="section-title">⭐ Footer Reviews</h2>
+        <p className="section-desc">Manage the customer reviews shown in the footer. Each review supports an image, reviewer name, description, and star rating.</p>
+
+        {reviews.length === 0 ? <p className="empty-msg">No footer reviews added yet.</p> : null}
+
+        <div className="items-list">
+          {reviews.map((review, idx) => (
+            <div key={review.id || idx} className="item-card">
+              <div className="item-card-header">
+                <span className="item-num">Review #{idx + 1}</span>
+                <button className="btn-icon danger" type="button" onClick={() => removeReview(idx)} title="Remove review">✕</button>
+              </div>
+
+              {review.image ? <img src={review.image} alt={review.name || `Review ${idx + 1}`} className="item-card-img" /> : null}
+
+              <div className="form-grid compact">
+                <div className="form-group">
+                  <label>Reviewer Name</label>
+                  <input value={review.name || ''} onChange={(e) => patchReview(idx, 'name', e.target.value)} placeholder="Guest name" />
+                </div>
+                <div className="form-group">
+                  <label>Stars</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={review.stars ?? 5}
+                    onChange={(e) => patchReview(idx, 'stars', Math.max(1, Math.min(5, Number(e.target.value) || 1)))}
+                  />
+                </div>
+                <div className="form-group full">
+                  <label>Description</label>
+                  <textarea
+                    rows={4}
+                    value={review.description || review.review || ''}
+                    onChange={(e) => {
+                      patchReview(idx, 'description', e.target.value);
+                      patchReview(idx, 'review', e.target.value);
+                    }}
+                    placeholder="Write the review text shown in the footer"
+                  />
+                </div>
+                <div className="form-group full upload-field-stack">
+                  <label>Reviewer Image</label>
+                  <input
+                    type="file"
+                    accept={IMAGE_INPUT_ACCEPT}
+                    onChange={async (e) => {
+                      await uploadReviewImage(idx, e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                  {!!review.image && (
+                    <button className="btn small outline" type="button" onClick={() => patchReview(idx, 'image', '')}>
+                      Remove Current Image
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button className="btn outline" type="button" onClick={addReview}>+ Add Review</button>
+      </div>
+    );
+  };
+
+  const renderFooterMenu = () => {
+    const defaultMenuItems = [
+      { id: 'footer-home', label: 'HOME', href: '/' },
+      { id: 'footer-hotels', label: 'HOTELS', href: '/destinations' },
+      { id: 'footer-destinations', label: 'DESTINATIONS', href: '/listings' },
+      { id: 'footer-contact', label: 'CONTACT', href: '/contact' },
+    ];
+    const rawMenuItems = Array.isArray(homePage.footerMenu) ? homePage.footerMenu : [];
+    const menuItems = defaultMenuItems.map((defaultItem, idx) => ({
+      ...defaultItem,
+      ...(rawMenuItems[idx] || {}),
+      id: defaultItem.id,
+      label: defaultItem.label,
+    }));
+
+    const patchMenuItem = (idx, field, value) => {
+      patchHome('footerMenu', menuItems.map((item, itemIdx) => (
+        itemIdx === idx ? { ...item, [field]: value } : item
+      )));
+    };
+
+    return (
+      <div className="panel-section">
+        <h2 className="section-title">📚 Footer Menu</h2>
+        <p className="section-desc">The footer menu matches the header: Home, Hotels, Destinations, and Contact. You can update the links, but no extra items are shown.</p>
+
+        <div className="items-list">
+          {menuItems.map((item, idx) => (
+            <div key={item.id || idx} className="item-card">
+              <div className="item-card-header">
+                <span className="item-num">Menu Item #{idx + 1}</span>
+              </div>
+
+              <div className="form-grid compact">
+                <div className="form-group">
+                  <label>Label</label>
+                  <input value={item.label || ''} readOnly />
+                </div>
+                <div className="form-group">
+                  <label>Link</label>
+                  <input value={item.href || ''} onChange={(e) => patchMenuItem(idx, 'href', e.target.value)} placeholder="/contact or https://example.com" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -934,6 +1426,15 @@ const AdminCMS = () => {
             <textarea rows={5} value={destinationContent.infoDescription || ''} onChange={(e) => patchDestinationContentField('destinationInfoDescription', e.target.value)} placeholder="Describe this destination..." />
           </div>
           <div className="form-group full">
+            <label>Google Maps Embed</label>
+            <textarea
+              rows={5}
+              value={destinationContent.mapEmbed || ''}
+              onChange={(e) => patchDestinationContentField('destinationMapEmbed', e.target.value)}
+              placeholder="Paste a Google Maps iframe or the embed URL here"
+            />
+          </div>
+          <div className="form-group full">
             <label>Highlights / Bullets (one per line)</label>
             <textarea rows={4} value={joinLines(normalizeBulletLines(destinationContent.infoBullets || []))} onChange={(e) => patchDestinationContentField('destinationInfoBullets', normalizeBulletLines(e.target.value))} placeholder="Comfortable Rooms & Eco-Friendly&#10;Resort Located 8 Minutes from Airport&#10;Beautiful Mountain Views" />
           </div>
@@ -941,7 +1442,7 @@ const AdminCMS = () => {
             <label>Information Images (3 recommended)</label>
             <input
               type="file"
-              accept="image/*"
+              accept={IMAGE_INPUT_ACCEPT}
               multiple
               onChange={async (e) => {
                 await uploadDestinationInfoImages(e.target.files);
@@ -993,6 +1494,14 @@ const AdminCMS = () => {
                   <input value={room.price || ''} onChange={(e) => updateRoom(rIdx, 'price', e.target.value)} placeholder="14,000" />
                 </div>
                 <div className="form-group">
+                  <label>Discount (%)</label>
+                  <input value={room.discountPercent || ''} onChange={(e) => updateRoom(rIdx, 'discountPercent', e.target.value)} placeholder="15" />
+                </div>
+                <div className="form-group full">
+                  <label>Discount Note</label>
+                  <input value={room.discountNote || ''} onChange={(e) => updateRoom(rIdx, 'discountNote', e.target.value)} placeholder="Weekend special for this room" />
+                </div>
+                <div className="form-group">
                   <label>Quantity</label>
                   <input value={room.quantity || ''} onChange={(e) => updateRoom(rIdx, 'quantity', e.target.value)} placeholder="05" />
                 </div>
@@ -1010,7 +1519,7 @@ const AdminCMS = () => {
                   <label>Room Images</label>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={IMAGE_INPUT_ACCEPT}
                     multiple
                     onChange={async (e) => {
                       await uploadRoomImages(rIdx, e.target.files);
@@ -1089,7 +1598,7 @@ const AdminCMS = () => {
                           <label>Image {imgIdx + 1} {!imgUrl && <span className="required">*</span>}</label>
                           <input
                             type="file"
-                            accept="image/*"
+                            accept={IMAGE_INPUT_ACCEPT}
                             onChange={async (e) => {
                               await uploadActivityImageAt(aIdx, imgIdx, e.target.files?.[0]);
                               e.target.value = '';
@@ -1139,7 +1648,7 @@ const AdminCMS = () => {
                   <label>Famous Place Images</label>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={IMAGE_INPUT_ACCEPT}
                     multiple
                     onChange={async (e) => {
                       await uploadFamousPlaceImages(idx, e.target.files);
@@ -1151,7 +1660,7 @@ const AdminCMS = () => {
                   <div className="form-group full image-preview-grid">
                     {(place.images || []).filter(Boolean).map((imgUrl, imageIdx) => (
                       <div key={`${idx}-${imageIdx}`} className="img-thumb image-thumb-small">
-                        <img src={imgUrl} alt={`Famous place ${idx + 1} image ${imageIdx + 1}`} />
+                        <img src={imgUrl} alt={`Famous place ${idx + 1} view ${imageIdx + 1}`} />
                         <button type="button" className="btn-icon danger" onClick={() => removeFamousPlaceImage(idx, imageIdx)} title="Remove image">✕</button>
                       </div>
                     ))}
@@ -1181,7 +1690,7 @@ const AdminCMS = () => {
             <label>Gallery / Hero Images (used in destination hero, 3 recommended)</label>
             <input
               type="file"
-              accept="image/*"
+              accept={IMAGE_INPUT_ACCEPT}
               multiple
               onChange={async (e) => {
                 await uploadDestinationTabImages('destinationGalleryImages', e.target.files);
@@ -1218,6 +1727,7 @@ const AdminCMS = () => {
         destinationContentInitialized: true,
         destinationInfoTitle: d.destinationInfoTitle || d.name || fallbackTabs.infoTitle || '',
         destinationInfoDescription: hasContentValue(d.destinationInfoDescription) ? d.destinationInfoDescription : (fallbackTabs.infoDescription || ''),
+        destinationMapEmbed: d.destinationMapEmbed || '',
         destinationInfoBullets: hasContentValue(d.destinationInfoBullets) ? cleanLines(d.destinationInfoBullets || []) : cleanLines(fallbackTabs.infoBullets || []),
         destinationInfoGallery: hasContentValue(d.destinationInfoGallery) ? cleanLines(d.destinationInfoGallery || []) : cleanLines(fallbackTabs.infoGallery || []),
         destinationRooms: hasContentValue(d.destinationRooms) ? (d.destinationRooms || []) : (fallbackTabs.rooms || []),
@@ -1234,6 +1744,7 @@ const AdminCMS = () => {
         Boolean(selectedDestination.destinationContentInitialized) ||
         hasContentValue(selectedDestination.destinationInfoTitle) ||
         hasContentValue(selectedDestination.destinationInfoDescription) ||
+        hasContentValue(selectedDestination.destinationMapEmbed) ||
         hasContentValue(selectedDestination.destinationInfoBullets) ||
         hasContentValue(selectedDestination.destinationInfoGallery) ||
         hasContentValue(selectedDestination.destinationRooms) ||
@@ -1330,11 +1841,19 @@ const AdminCMS = () => {
                             onChange={(e) => patchPoint(selectedDestination.id, point.id, (p) => ({ ...p, slug: toSlug(e.target.value) }))}
                           />
                         </div>
+                        <div className="form-group" style={{ marginBottom: 8 }}>
+                          <label>Google Place ID</label>
+                          <input
+                            value={point.googlePlaceId || ''}
+                            onChange={(e) => patchPoint(selectedDestination.id, point.id, (p) => ({ ...p, googlePlaceId: e.target.value }))}
+                            placeholder="ChIJ..."
+                          />
+                        </div>
                         <div className="form-group">
                           <label>Card Image Upload</label>
                           <input
                             type="file"
-                            accept="image/*"
+                            accept={IMAGE_INPUT_ACCEPT}
                             onChange={(e) => {
                               setSelectedPointId(point.id);
                               handlePointCardImageUpload(e.target.files?.[0]);
@@ -1347,6 +1866,25 @@ const AdminCMS = () => {
                             </button>
                           )}
                         </div>
+                        <div className="form-group upload-field-stack">
+                          <label>Hero Section Slides</label>
+                          <input
+                            type="file"
+                            accept={IMAGE_INPUT_ACCEPT}
+                            multiple
+                            onChange={async (e) => {
+                              await handlePointHeroSlidesUpload(point.id, e.target.files);
+                              e.target.value = '';
+                            }}
+                          />
+                        </div>
+                        {cleanLines(point.heroSlides || []).length > 0 && (
+                          <div className="image-preview-grid full">
+                            {cleanLines(point.heroSlides).map((url, i) => (
+                              <div key={`${point.id}-${i}`} className="img-thumb"><img src={url} alt={`${point.name} slide ${i + 1}`} /><span>Slide {i + 1}</span><button className="btn-icon danger small" type="button" onClick={() => removePointHeroSlideAt(point.id, i)} title="Remove slide">✕</button></div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <button className="btn-icon danger" style={{ alignSelf: 'flex-start' }} onClick={() => { setSelectedPointId(point.id); removePoint(); }} title="Delete point">✕</button>
@@ -1363,6 +1901,38 @@ const AdminCMS = () => {
       <div className="panel-section">
         <h2 className="section-title">🏔️ Destinations</h2>
         <p className="section-desc">Manage resort destinations and tourist points with their content tabs.</p>
+
+        <div className="form-grid" style={{ marginBottom: 20 }}>
+          <div className="form-group full admin-subsection">
+            <label>Destinations Page Hero Title</label>
+            <textarea
+              rows={3}
+              value={destinationsPage.heroTitle || ''}
+              onChange={(e) => patchDestinationsPage('heroTitle', e.target.value)}
+              placeholder="EXPLORE\nDESTINATIONS"
+            />
+          </div>
+          <div className="form-group full admin-subsection">
+            <label>Destinations Page Hero Slides</label>
+            <p className="section-note">Upload the images used at the top of the Destinations listing page.</p>
+            <input
+              type="file"
+              accept={IMAGE_INPUT_ACCEPT}
+              multiple
+              onChange={async (e) => {
+                await handleDestinationsPageHeroSlidesUpload(e.target.files);
+                e.target.value = '';
+              }}
+            />
+          </div>
+          {cleanLines(destinationsPage.heroSlides || []).length > 0 && (
+            <div className="image-preview-grid full">
+              {cleanLines(destinationsPage.heroSlides).map((url, i) => (
+                <div key={`destinations-page-slide-${i}`} className="img-thumb"><img src={url} alt={`Destinations page slide ${i + 1}`} /><span>Slide {i + 1}</span><button className="btn-icon danger small" type="button" onClick={() => removeDestinationsPageHeroSlideAt(i)} title="Remove slide">✕</button></div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Destination selector */}
         <div className="dest-selector-bar">
@@ -1399,8 +1969,16 @@ const AdminCMS = () => {
                     <input value={selectedDestination.slug || ''} onChange={(e) => patchDestination(selectedDestination.id, (d) => ({ ...d, slug: toSlug(e.target.value) }))} />
                   </div>
                   <div className="form-group">
+                    <label>Google Place ID</label>
+                    <input
+                      value={selectedDestination.googlePlaceId || ''}
+                      onChange={(e) => patchDestination(selectedDestination.id, (d) => ({ ...d, googlePlaceId: e.target.value }))}
+                      placeholder="ChIJ..."
+                    />
+                  </div>
+                  <div className="form-group">
                     <label>Card Image Upload</label>
-                    <input type="file" accept="image/*" onChange={(e) => handleDestinationCardImageUpload(e.target.files?.[0])} />
+                    <input type="file" accept={IMAGE_INPUT_ACCEPT} onChange={(e) => handleDestinationCardImageUpload(e.target.files?.[0])} />
                     {!!selectedDestination.cardImage && (
                       <button className="btn small outline" type="button" onClick={() => patchDestination(selectedDestination.id, (d) => ({ ...d, cardImage: '' }))}>
                         Remove Current Image
@@ -1415,14 +1993,23 @@ const AdminCMS = () => {
                       </div>
                     </div>
                   )}
-                  <div className="form-group full">
-                    <label>Hero Slides (one URL per line)</label>
-                    <textarea rows={4} value={joinLines(selectedDestination.heroSlides || [])} onChange={(e) => patchDestination(selectedDestination.id, (d) => ({ ...d, heroSlides: splitLines(e.target.value) }))} />
+                  <div className="form-group full admin-subsection">
+                    <label>Destination Hero Section</label>
+                    <p className="section-note">Upload the slides used in the destination hero banner.</p>
+                    <input
+                      type="file"
+                      accept={IMAGE_INPUT_ACCEPT}
+                      multiple
+                      onChange={async (e) => {
+                        await handleDestinationHeroSlidesUpload(e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
                   </div>
-                  {(selectedDestination.heroSlides || []).length > 0 && (
+                  {cleanLines(selectedDestination.heroSlides || []).length > 0 && (
                     <div className="image-preview-grid full">
                       {cleanLines(selectedDestination.heroSlides).map((url, i) => (
-                        <div key={i} className="img-thumb"><img src={url} alt={`Slide ${i + 1}`} /><span>Slide {i + 1}</span></div>
+                        <div key={i} className="img-thumb"><img src={url} alt={`Slide ${i + 1}`} /><span>Slide {i + 1}</span><button className="btn-icon danger small" type="button" onClick={() => removeDestinationHeroSlideAt(i)} title="Remove slide">✕</button></div>
                       ))}
                     </div>
                   )}
@@ -1550,7 +2137,9 @@ const AdminCMS = () => {
                           <button className="btn small outline" onClick={handleBookingCancel}>Cancel</button>
                         </div>
                       ) : (
-                        <button className="btn small outline" onClick={() => handleBookingEditStart(b)}>Edit</button>
+                        <div className="booking-edit-actions">
+                          <button className="btn small outline" onClick={() => handleBookingEditStart(b)}>Edit</button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -1576,12 +2165,16 @@ const AdminCMS = () => {
     switch (activeNav) {
       case 'dashboard': return renderDashboard();
       case 'home-hero': return renderHeroSection();
+      case 'listings-hero': return renderListingsHeroSection();
+      case 'getaways-hero': return renderGetawaysHeroSection();
       case 'home-travel': return renderTravelSection();
       case 'home-locations': return renderLocations();
       case 'home-dining': return renderDining();
       case 'home-offers': return renderOffers();
       case 'home-app': return renderAppSection();
       case 'home-contact': return renderContact();
+      case 'home-footer-menu': return renderFooterMenu();
+      case 'home-footer-reviews': return renderFooterReviews();
       case 'destinations': return renderDestinations();
       case 'bookings': return renderBookings();
       default: return renderDashboard();

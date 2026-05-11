@@ -57,28 +57,6 @@
   color: #202b46;
   text-decoration: underline;
 }
-.contact-social-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-  margin-top: 1rem;
-}
-.social-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: #f1f5fb;
-  color: #202b46;
-  border-radius: 999px;
-  padding: 0.6rem 0.9rem;
-  font-size: 0.95rem;
-  text-decoration: none;
-  transition: background 0.2s ease;
-}
-.social-link:hover {
-  background: #202b46;
-  color: #fff;
-}
 .status-message {
   margin-top: 0.75rem;
   color: #202b46;

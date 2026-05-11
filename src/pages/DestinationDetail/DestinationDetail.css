@@ -33,6 +33,40 @@
   box-sizing: border-box;
 }
 
+.destination-map-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 32px auto 40px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .destination-map-section {
+    max-width: 95vw;
+    margin: 24px auto 32px;
+  }
+}
+
+@media (max-width: 600px) {
+  .destination-map-section {
+    max-width: 100vw;
+    margin: 12px auto 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .destination-map-section .tp-map-card {
+    margin-bottom: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .destination-map-section .tp-map-card {
+    margin-bottom: 24px;
+  }
+}
+
 .famous-places-carousel-container {
   position: relative;
   margin-bottom: 48px;
@@ -1008,6 +1042,49 @@
 
 :global(.yarl__nav_button:hover) {
   background: rgba(255, 204, 102, 0.3) !important;
+}
+
+@media (max-width: 768px) {
+  .tourist-point-gallery-grid {
+    gap: 16px;
+  }
+
+  .tourist-point-gallery-img {
+    width: calc(50% - 8px);
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .room-images-modal {
+    padding: 20px 16px;
+  }
+
+  .room-images-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .tourist-point-gallery-img {
+    width: 100%;
+    flex-basis: 100%;
+    height: 220px;
+  }
+
+  .tourist-point-info {
+    padding: 18px 16px 16px;
+  }
+
+  .room-images-overlay {
+    padding: 12px;
+  }
+
+  .room-images-modal {
+    padding: 16px 12px;
+  }
+
+  .room-images-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 :global(.yarl__slide) {

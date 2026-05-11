@@ -5,10 +5,21 @@ import ExploreCard from '../../components/ExploreCard/ExploreCard';
 import { fetchCms } from '../../services/cmsApi';
 import './Destinations.css';
 
+const cleanLines = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || '').trim()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value.split('\n').map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
+};
+
 const Destinations = () => {
   const navigate = useNavigate();
   const [cms, setCms] = useState({ destinations: [] });
   const [error, setError] = useState('');
+  const [activeSlide, setActiveSlide] = useState(1);
 
   useEffect(() => {
     const load = async () => {
@@ -41,9 +52,22 @@ const Destinations = () => {
     }));
   }, [cms]);
 
+  const destinationsPage = cms.destinationsPage || {};
+  const heroSlides = cleanLines(destinationsPage.heroSlides);
+  const heroTitle = destinationsPage.heroTitle || 'EXPLORE\nDESTINATIONS';
+  const heroPhone = cms?.homePage?.hero?.phone || undefined;
+  const heroWhatsapp = cms?.homePage?.hero?.whatsapp || undefined;
+
   return (
     <>
-      <Hero />
+      <Hero
+        slides={heroSlides}
+        activeSlide={activeSlide}
+        setActiveSlide={setActiveSlide}
+        title={heroTitle}
+        phone={heroPhone}
+        whatsapp={heroWhatsapp}
+      />
       <section className="destinations-explore-section">
         <div className='explore-title'>EXPLORE DESTINATIONS</div>
 
