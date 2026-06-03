@@ -193,6 +193,16 @@ const AdminCMS = () => {
   const [saving, setSaving] = useState(false);
   const [brandLogo, setBrandLogo] = useState('');
 
+  const showSuccess = useCallback((message) => {
+    setError('');
+    setStatus(message);
+  }, []);
+
+  const showError = useCallback((message) => {
+    setStatus('');
+    setError(message);
+  }, []);
+
   /* booking filters */
   const [bookingSearch, setBookingSearch] = useState('');
   const [bookingFilter, setBookingFilter] = useState('all');
@@ -320,6 +330,15 @@ const AdminCMS = () => {
   }, [token, loadDashboard]);
 
   useEffect(() => {
+    if (!status && !error) return undefined;
+    const timeout = window.setTimeout(() => {
+      setStatus('');
+      setError('');
+    }, 3500);
+    return () => window.clearTimeout(timeout);
+  }, [status, error]);
+
+  useEffect(() => {
     let mounted = true;
     fetchCms()
       .then((cms) => {
@@ -405,14 +424,16 @@ const AdminCMS = () => {
       const uploaded = await uploadImages(files);
       const current = cleanLines((homePage.hero || {}).slides || []);
       patchHomeNested('hero', 'slides', [...current, ...uploaded]);
+      showSuccess('Hero slides uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload hero slides.');
+      showError(err.message || 'Unable to upload hero slides.');
     }
   };
 
   const removeHomeHeroSlideAt = (idx) => {
     const current = cleanLines((homePage.hero || {}).slides || []);
     patchHomeNested('hero', 'slides', current.filter((_, i) => i !== idx));
+    showSuccess('Hero slide deleted.');
   };
 
   const handleHomeSectionImageUpload = async (section, field, file, fallbackMessage) => {
@@ -420,8 +441,9 @@ const AdminCMS = () => {
     try {
       const imageUrl = await uploadImage(file);
       patchHomeNested(section, field, imageUrl);
+      showSuccess('Image uploaded successfully.');
     } catch (err) {
-      setError(err.message || fallbackMessage);
+      showError(err.message || fallbackMessage);
     }
   };
 
@@ -431,8 +453,9 @@ const AdminCMS = () => {
       const imageUrl = await uploadImage(file);
       const items = homePage[collectionKey] || [];
       patchHome(collectionKey, items.map((item, itemIdx) => itemIdx === idx ? { ...item, image: imageUrl } : item));
+      showSuccess('Image uploaded successfully.');
     } catch (err) {
-      setError(err.message || fallbackMessage);
+      showError(err.message || fallbackMessage);
     }
   };
 
@@ -441,8 +464,9 @@ const AdminCMS = () => {
     try {
       const imageUrl = await uploadImage(file);
       patchHome('brandLogo', imageUrl);
+      showSuccess('Logo uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Failed to upload logo.');
+      showError(err.message || 'Failed to upload logo.');
     }
   };
 
@@ -452,14 +476,16 @@ const AdminCMS = () => {
       const uploaded = await uploadImages(files);
       const current = cleanLines(destinationsPage.heroSlides || []);
       patchDestinationsPage('heroSlides', [...current, ...uploaded]);
+      showSuccess('Destination page hero slides uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload destinations page hero slides.');
+      showError(err.message || 'Unable to upload destinations page hero slides.');
     }
   };
 
   const removeDestinationsPageHeroSlideAt = (idx) => {
     const current = cleanLines(destinationsPage.heroSlides || []);
     patchDestinationsPage('heroSlides', current.filter((_, i) => i !== idx));
+    showSuccess('Destination page hero slide deleted.');
   };
 
   const handleListingsPageHeroSlidesUpload = async (files) => {
@@ -468,14 +494,16 @@ const AdminCMS = () => {
       const uploaded = await uploadImages(files);
       const current = cleanLines(listingsPage.heroSlides || []);
       patchListingsPage('heroSlides', [...current, ...uploaded]);
+      showSuccess('Listing page hero slides uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload listings page hero slides.');
+      showError(err.message || 'Unable to upload listings page hero slides.');
     }
   };
 
   const removeListingsPageHeroSlideAt = (idx) => {
     const current = cleanLines(listingsPage.heroSlides || []);
     patchListingsPage('heroSlides', current.filter((_, i) => i !== idx));
+    showSuccess('Listing page hero slide deleted.');
   };
 
   const handleGetawaysPageHeroSlidesUpload = async (files) => {
@@ -484,14 +512,16 @@ const AdminCMS = () => {
       const uploaded = await uploadImages(files);
       const current = cleanLines(getawaysPage.heroSlides || []);
       patchGetawaysPage('heroSlides', [...current, ...uploaded]);
+      showSuccess('Contact page hero slides uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload getaways page hero slides.');
+      showError(err.message || 'Unable to upload getaways page hero slides.');
     }
   };
 
   const removeGetawaysPageHeroSlideAt = (idx) => {
     const current = cleanLines(getawaysPage.heroSlides || []);
     patchGetawaysPage('heroSlides', current.filter((_, i) => i !== idx));
+    showSuccess('Contact page hero slide deleted.');
   };
 
   const handleDestinationCardImageUpload = async (file) => {
@@ -499,8 +529,9 @@ const AdminCMS = () => {
     try {
       const imageData = await uploadImage(file);
       patchDestination(selectedDestination.id, (d) => ({ ...d, cardImage: imageData }));
+      showSuccess('Destination image uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload destination image.');
+      showError(err.message || 'Unable to upload destination image.');
     }
   };
 
@@ -509,8 +540,9 @@ const AdminCMS = () => {
     try {
       const imageData = await uploadImage(file);
       patchPoint(selectedDestination.id, selectedPoint.id, (p) => ({ ...p, cardImage: imageData }));
+      showSuccess('Tourist point image uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload point image.');
+      showError(err.message || 'Unable to upload point image.');
     }
   };
 
@@ -520,8 +552,9 @@ const AdminCMS = () => {
       const uploaded = await uploadImages(files);
       const current = cleanLines(selectedDestination.heroSlides || []);
       patchDestination(selectedDestination.id, (d) => ({ ...d, heroSlides: [...current, ...uploaded] }));
+      showSuccess('Destination hero slides uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload destination hero slides.');
+      showError(err.message || 'Unable to upload destination hero slides.');
     }
   };
 
@@ -529,6 +562,7 @@ const AdminCMS = () => {
     if (!selectedDestination) return;
     const current = cleanLines(selectedDestination.heroSlides || []);
     patchDestination(selectedDestination.id, (d) => ({ ...d, heroSlides: current.filter((_, i) => i !== idx) }));
+    showSuccess('Destination hero slide deleted.');
   };
 
   const handlePointHeroSlidesUpload = async (pointId, files) => {
@@ -538,8 +572,9 @@ const AdminCMS = () => {
       const point = (selectedDestination.points || []).find((entry) => entry.id === pointId);
       const current = cleanLines(point?.heroSlides || []);
       patchPoint(selectedDestination.id, pointId, (p) => ({ ...p, heroSlides: [...current, ...uploaded] }));
+      showSuccess('Tourist point hero slides uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload point hero slides.');
+      showError(err.message || 'Unable to upload point hero slides.');
     }
   };
 
@@ -548,6 +583,7 @@ const AdminCMS = () => {
     const point = (selectedDestination.points || []).find((entry) => entry.id === pointId);
     const current = cleanLines(point?.heroSlides || []);
     patchPoint(selectedDestination.id, pointId, (p) => ({ ...p, heroSlides: current.filter((_, i) => i !== idx) }));
+    showSuccess('Tourist point hero slide deleted.');
   };
 
   const addDestination = () => {
@@ -577,6 +613,7 @@ const AdminCMS = () => {
     }));
     setSelectedDestinationId(id);
     setSelectedPointId('');
+    showSuccess('Destination added. Don\'t forget to save changes.');
   };
 
   const removeDestination = async () => {
@@ -596,9 +633,9 @@ const AdminCMS = () => {
     try {
       setSaving(true); setError(''); setStatus('');
       await updateCms(newCms, token);
-      setStatus('Destination deleted and saved successfully!');
+      showSuccess('Destination deleted and saved successfully!');
     } catch (err) {
-      setError(err.message || 'Destination removed locally but failed to save. Click Save to retry.');
+      showError(err.message || 'Destination removed locally but failed to save. Click Save to retry.');
     } finally {
       setSaving(false);
     }
@@ -615,6 +652,7 @@ const AdminCMS = () => {
       }],
     }));
     setSelectedPointId(id);
+    showSuccess('Tourist point added. Don\'t forget to save changes.');
   };
 
   const removePoint = () => {
@@ -625,6 +663,7 @@ const AdminCMS = () => {
     }));
     const next = (selectedDestination.points || []).find((p) => p.id !== selectedPoint.id);
     setSelectedPointId(next?.id || '');
+    showSuccess('Tourist point deleted. Don\'t forget to save changes.');
   };
 
   const patchDestinationContentField = (field, value) => {
@@ -642,8 +681,9 @@ const AdminCMS = () => {
       const uploaded = await uploadImages(files);
       const current = cleanLines(destinationContent.infoGallery || []);
       patchDestinationContentField('destinationInfoGallery', [...current, ...uploaded]);
+      showSuccess('Destination information images uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload destination information images.');
+      showError(err.message || 'Unable to upload destination information images.');
     }
   };
 
@@ -651,6 +691,7 @@ const AdminCMS = () => {
     if (!selectedDestination) return;
     const current = cleanLines(destinationContent.infoGallery || []);
     patchDestinationContentField('destinationInfoGallery', current.filter((_, i) => i !== idx));
+    showSuccess('Destination information image deleted.');
   };
 
   const uploadDestinationTabImages = async (field, files) => {
@@ -659,14 +700,16 @@ const AdminCMS = () => {
       const uploaded = await uploadImages(files);
       const current = cleanLines(destinationContent[field] || []);
       patchDestinationContentField(field, [...current, ...uploaded]);
+      showSuccess('Images uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload images.');
+      showError(err.message || 'Unable to upload images.');
     }
   };
 
   const removeDestinationTabImageAt = (field, idx) => {
     const current = cleanLines(destinationContent[field] || []);
     patchDestinationContentField(field, current.filter((_, i) => i !== idx));
+    showSuccess('Image deleted.');
   };
 
   const uploadRoomImages = async (roomIdx, files) => {
@@ -676,8 +719,9 @@ const AdminCMS = () => {
       const rooms = destinationContent.rooms || [];
       const current = cleanLines(Array.isArray(rooms[roomIdx]?.images) ? rooms[roomIdx].images : (rooms[roomIdx]?.image ? [rooms[roomIdx].image] : []));
       updateRoom(roomIdx, 'images', [...current, ...uploaded]);
+      showSuccess('Room images uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload room images.');
+      showError(err.message || 'Unable to upload room images.');
     }
   };
 
@@ -685,6 +729,7 @@ const AdminCMS = () => {
     const rooms = destinationContent.rooms || [];
     const current = cleanLines(Array.isArray(rooms[roomIdx]?.images) ? rooms[roomIdx].images : (rooms[roomIdx]?.image ? [rooms[roomIdx].image] : []));
     updateRoom(roomIdx, 'images', current.filter((_, i) => i !== imgIdx));
+    showSuccess('Room image deleted.');
   };
 
   const uploadActivityImageAt = async (activityIdx, imageIdx, file) => {
@@ -692,8 +737,9 @@ const AdminCMS = () => {
     try {
       const imageData = await uploadImage(file);
       updateActivityImage(activityIdx, imageIdx, imageData);
+      showSuccess('Activity image uploaded successfully.');
     } catch (err) {
-      setError(err.message || 'Unable to upload activity image.');
+      showError(err.message || 'Unable to upload activity image.');
     }
   };
 
@@ -701,14 +747,19 @@ const AdminCMS = () => {
   const addRoom = () => {
     const rooms = [...(destinationContent.rooms || []), { images: [], title: '', price: '', discountPercent: '', discountNote: '', quantity: '', persons: '', area: '', amenities: [] }];
     patchDestinationContentField('destinationRooms', rooms);
+    showSuccess('Room added.');
   };
-  const removeRoom = (idx) => patchDestinationContentField('destinationRooms', (destinationContent.rooms || []).filter((_, i) => i !== idx));
+  const removeRoom = (idx) => {
+    patchDestinationContentField('destinationRooms', (destinationContent.rooms || []).filter((_, i) => i !== idx));
+    showSuccess('Room deleted.');
+  };
   const updateRoom = (idx, field, val) => {
     patchDestinationContentField('destinationRooms', (destinationContent.rooms || []).map((r, i) => i === idx ? { ...r, [field]: val } : r));
   };
   const addRoomAmenity = (idx) => {
     const rooms = (destinationContent.rooms || []).map((r, i) => i === idx ? { ...r, amenities: [...(r.amenities || []), { icon: '', label: '' }] } : r);
     patchDestinationContentField('destinationRooms', rooms);
+    showSuccess('Room amenity added.');
   };
   const updateRoomAmenity = (rIdx, aIdx, field, val) => {
     const rooms = (destinationContent.rooms || []).map((r, ri) => ri === rIdx ? {
@@ -721,19 +772,30 @@ const AdminCMS = () => {
       ...r, amenities: (r.amenities || []).filter((_, ai) => ai !== aIdx)
     } : r);
     patchDestinationContentField('destinationRooms', rooms);
+    showSuccess('Room amenity deleted.');
   };
 
   // activities
   const addActivity = () => {
     patchDestinationContentField('destinationActivities', [...(destinationContent.activities || []), { title: '', description: '', images: ['', '', '', '', ''] }]);
+    showSuccess('Activity added.');
   };
-  const removeActivity = (idx) => patchDestinationContentField('destinationActivities', (destinationContent.activities || []).filter((_, i) => i !== idx));
+  const removeActivity = (idx) => {
+    patchDestinationContentField('destinationActivities', (destinationContent.activities || []).filter((_, i) => i !== idx));
+    showSuccess('Activity deleted.');
+  };
   const updateActivity = (idx, field, val) => {
     patchDestinationContentField('destinationActivities', (destinationContent.activities || []).map((a, i) => i === idx ? { ...a, [field]: val } : a));
   };
   // famous places
-  const addFamousPlace = () => patchDestinationContentField('destinationFamousPlaces', [...(destinationContent.famousPlaces || []), { title: '', description: '', images: [] }]);
-  const removeFamousPlace = (idx) => patchDestinationContentField('destinationFamousPlaces', (destinationContent.famousPlaces || []).filter((_, i) => i !== idx));
+  const addFamousPlace = () => {
+    patchDestinationContentField('destinationFamousPlaces', [...(destinationContent.famousPlaces || []), { title: '', description: '', images: [] }]);
+    showSuccess('Famous place added.');
+  };
+  const removeFamousPlace = (idx) => {
+    patchDestinationContentField('destinationFamousPlaces', (destinationContent.famousPlaces || []).filter((_, i) => i !== idx));
+    showSuccess('Famous place deleted.');
+  };
   const updateFamousPlace = (idx, field, val) => patchDestinationContentField('destinationFamousPlaces', (destinationContent.famousPlaces || []).map((p, i) => i === idx ? { ...p, [field]: val } : p));
   const removeFamousPlaceImage = (idx, imageIdx) => {
     patchDestinationContentField('destinationFamousPlaces', (destinationContent.famousPlaces || []).map((p, i) => {
@@ -741,6 +803,7 @@ const AdminCMS = () => {
       const images = [...(p.images || [])].filter((_, j) => j !== imageIdx);
       return { ...p, images };
     }));
+    showSuccess('Famous place image deleted.');
   };
   const uploadFamousPlaceImages = async (idx, files) => {
     if (!files || files.length === 0) return;
@@ -750,7 +813,7 @@ const AdminCMS = () => {
         const imageData = await uploadImage(file);
         uploaded.push(imageData);
       } catch (err) {
-        setError(err.message || 'Failed to upload famous place image.');
+        showError(err.message || 'Failed to upload famous place image.');
       }
     }
     if (uploaded.length > 0) {
@@ -758,6 +821,7 @@ const AdminCMS = () => {
         if (i !== idx) return p;
         return { ...p, images: [...(p.images || []).filter(Boolean), ...uploaded] };
       }));
+      showSuccess('Famous place images uploaded successfully.');
     }
   };
 
@@ -777,7 +841,7 @@ const AdminCMS = () => {
     try {
       await updateCms(cmsData, token);
       setStatus('All CMS content saved successfully!');
-    } catch (err) { setError(err.message || 'Failed to save.'); }
+    } catch (err) { showError(err.message || 'Failed to save.'); }
     finally { setSaving(false); }
   };
 
@@ -799,7 +863,7 @@ const AdminCMS = () => {
         setStatus('Booking status updated.');
       }
       setError('');
-    } catch (err) { setError(err.message); }
+    } catch (err) { showError(err.message); }
   };
 
   const handleBookingEditStart = (booking) => {
@@ -844,7 +908,7 @@ const AdminCMS = () => {
       setError('');
       setEditingBookingId('');
     } catch (err) {
-      setError(err.message || 'Failed to save booking dates.');
+      showError(err.message || 'Failed to save booking dates.');
     }
   };
 
@@ -865,7 +929,7 @@ const AdminCMS = () => {
       localStorage.setItem('admin_token', result.token);
       setToken(result.token);
       setUsername(''); setPassword('');
-    } catch (err) { setError(err.message || 'Login failed.'); }
+    } catch (err) { showError(err.message || 'Login failed.'); }
     finally { setLoginLoading(false); }
   };
 
@@ -896,7 +960,7 @@ const AdminCMS = () => {
             <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <button type="submit" disabled={loginLoading}>{loginLoading ? 'Signing in...' : 'Sign In'}</button>
           </form>
-          {error && <p className="toast error">{error}</p>}
+          {error && <p className="admin-toast admin-toast-error">{error}</p>}
         </div>
       </div>
     );
@@ -1085,8 +1149,14 @@ const AdminCMS = () => {
       const updated = locs.map((l, i) => i === idx ? { ...l, [field]: value } : l);
       patchHome('locations', updated);
     };
-    const addLoc = () => patchHome('locations', [...locs, { id: Date.now(), name: '', location: '', image: '' }]);
-    const removeLoc = (idx) => patchHome('locations', locs.filter((_, i) => i !== idx));
+    const addLoc = () => {
+      patchHome('locations', [...locs, { id: Date.now(), name: '', location: '', image: '' }]);
+      showSuccess('Location added.');
+    };
+    const removeLoc = (idx) => {
+      patchHome('locations', locs.filter((_, i) => i !== idx));
+      showSuccess('Location deleted.');
+    };
 
     return (
       <div className="panel-section">
@@ -1114,7 +1184,7 @@ const AdminCMS = () => {
                     }}
                   />
                   {!!loc.image && (
-                    <button className="btn small outline" type="button" onClick={() => updateLoc(idx, 'image', '')}>
+                    <button className="btn small outline" type="button" onClick={() => { updateLoc(idx, 'image', ''); showSuccess('Location image removed.'); }}>
                       Remove Current Image
                     </button>
                   )}
@@ -1133,8 +1203,14 @@ const AdminCMS = () => {
     const updateItem = (idx, field, value) => {
       patchHome('dining', items.map((item, i) => i === idx ? { ...item, [field]: value } : item));
     };
-    const addItem = () => patchHome('dining', [...items, { id: Date.now(), name: '', description: '', image: '' }]);
-    const removeItem = (idx) => patchHome('dining', items.filter((_, i) => i !== idx));
+    const addItem = () => {
+      patchHome('dining', [...items, { id: Date.now(), name: '', description: '', image: '' }]);
+      showSuccess('Restaurant added.');
+    };
+    const removeItem = (idx) => {
+      patchHome('dining', items.filter((_, i) => i !== idx));
+      showSuccess('Restaurant deleted.');
+    };
 
     return (
       <div className="panel-section">
@@ -1162,7 +1238,7 @@ const AdminCMS = () => {
                     }}
                   />
                   {!!item.image && (
-                    <button className="btn small outline" type="button" onClick={() => updateItem(idx, 'image', '')}>
+                    <button className="btn small outline" type="button" onClick={() => { updateItem(idx, 'image', ''); showSuccess('Restaurant image removed.'); }}>
                       Remove Current Image
                     </button>
                   )}
@@ -1223,7 +1299,7 @@ const AdminCMS = () => {
               }}
             />
             {!!homePage.brandLogo && (
-              <button className="btn small outline" type="button" onClick={() => patchHome('brandLogo', '')}>
+              <button className="btn small outline" type="button" onClick={() => { patchHome('brandLogo', ''); showSuccess('Brand logo removed.'); }}>
                 Remove Current Logo
               </button>
             )}
@@ -1267,10 +1343,12 @@ const AdminCMS = () => {
           published: true,
         },
       ]);
+      showSuccess('Footer review added.');
     };
 
     const removeReview = (idx) => {
       patchHome('footerReviews', reviews.filter((_, itemIdx) => itemIdx !== idx));
+      showSuccess('Footer review deleted.');
     };
 
     const uploadReviewImage = async (idx, file) => {
@@ -1278,8 +1356,9 @@ const AdminCMS = () => {
       try {
         const imageUrl = await uploadImage(file);
         patchReview(idx, 'image', imageUrl);
+        showSuccess('Review image uploaded successfully.');
       } catch (err) {
-        setError(err.message || 'Unable to upload review image.');
+        showError(err.message || 'Unable to upload review image.');
       }
     };
 
@@ -1338,7 +1417,7 @@ const AdminCMS = () => {
                     }}
                   />
                   {!!review.image && (
-                    <button className="btn small outline" type="button" onClick={() => patchReview(idx, 'image', '')}>
+                    <button className="btn small outline" type="button" onClick={() => { patchReview(idx, 'image', ''); showSuccess('Review image removed.'); }}>
                       Remove Current Image
                     </button>
                   )}
@@ -2220,8 +2299,8 @@ const AdminCMS = () => {
 
         <div className="admin-content">
           {renderContent()}
-          {status && <div className="toast success" onClick={() => setStatus('')}>{status}</div>}
-          {error && <div className="toast error" onClick={() => setError('')}>{error}</div>}
+          {status && <div className="admin-toast admin-toast-success" onClick={() => setStatus('')}>{status}</div>}
+          {error && <div className="admin-toast admin-toast-error" onClick={() => setError('')}>{error}</div>}
         </div>
       </main>
     </div>

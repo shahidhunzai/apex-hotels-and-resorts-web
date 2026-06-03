@@ -1122,7 +1122,7 @@
 }
 
 /* ─── TOAST ───────────────────────────────────────── */
-.toast {
+.admin-toast {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -1137,13 +1137,13 @@
   box-shadow: var(--shadow-md);
 }
 
-.toast.success {
+.admin-toast-success {
   background: #e8f5e9;
   color: var(--success);
   border: 1px solid #a5d6a7;
 }
 
-.toast.error {
+.admin-toast-error {
   background: #ffebee;
   color: var(--danger);
   border: 1px solid #ef9a9a;
