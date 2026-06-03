@@ -1,146 +1,92 @@
-# Roomy.pk - Property Rental Platform
+# Roomy
 
-A modern, responsive React-based property rental platform for Pakistan, helping users find rooms and properties across major cities.
+Roomy is a full-stack property rental platform with a React frontend and an Express + MongoDB backend.
 
-## Features
+## Stack
 
-- 🏠 **Property Listings**: Browse thousands of verified properties
-- 🔍 **Advanced Search**: Filter by city, type, price, bedrooms, and more
-- 📱 **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
-- 📝 **Post Property**: Easy-to-use form for listing your property
-- 🗺️ **City-based Search**: Explore properties by different cities
-- 💬 **Contact Owners**: Direct communication with property owners
-- ✨ **Modern UI**: Clean and intuitive user interface
-
-## Tech Stack
-
-- **React** 18.2.0
-- **React Router** 6.20.0
-- **CSS3** for styling
-- **React Scripts** 5.0.1
-
-## Installation
-
-1. Clone the repository
-```bash
-git clone <repository-url>
-cd roomy
-```
-
-2. Install dependencies
-```bash
-npm install
-```
-
-3. Start frontend + backend together
-```bash
-npm run dev
-```
-
-The app will open at [http://localhost:3000](http://localhost:3000)
-
-## Available Scripts
-
-- `npm run dev` - Runs frontend (3000) and backend (5001) together
-- `npm start` - Runs the app in development mode
-- `npm run server` - Runs the Express SMTP/CMS backend on port 5001
-- `npm build` - Builds the app for production
-- `npm test` - Launches the test runner
-- `npm eject` - Ejects from Create React App (one-way operation)
-
-## CMS + Admin Panel
-
-The project now supports a dynamic destination CMS backed by JSON data and admin APIs.
-
-- Public CMS endpoint: `GET /api/cms`
-- Admin CMS save endpoint: `PUT /api/admin/cms` (requires `x-admin-key`)
-- Admin bookings endpoint: `GET /api/admin/bookings` (requires `x-admin-key`)
-- Admin booking status update: `PATCH /api/admin/bookings/:id/status` (requires `x-admin-key`)
-
-### Run locally
-
-1. Start both services with one command (recommended):
-
-```bash
-npm run dev
-```
-
-2. Or run backend and frontend in separate terminals:
-
-```bash
-npm run server
-```
-
-```bash
-npm start
-```
-
-### Admin UI
-
-- Open `http://localhost:3000/admin/cms`
-- Paste your `ADMIN_API_KEY`
-- Edit JSON to manage:
-	- Explore destination cards
-	- Small tourist point cards under each destination
-	- Hero slides and tab content (info, rooms, activities, gallery)
-
-### Data Source
-
-- CMS data file: `server/data/cms.json`
-- Bookings log file: `server/data/bookings.json`
-
-Both are local data files (ignored by git).
+- Frontend: React 18, React Router, CSS, React Scripts
+- Backend: Express, Mongoose, Nodemailer, JWT auth
+- Database: MongoDB
 
 ## Project Structure
 
-```
+```text
 roomy/
-├── public/
-│   └── index.html
-├── src/
-│   ├── components/
-│   │   ├── Navbar/
-│   │   ├── Footer/
-│   │   ├── SearchBar/
-│   │   └── PropertyCard/
-│   ├── pages/
-│   │   ├── Home/
-│   │   ├── Listings/
-│   │   ├── PropertyDetail/
-│   │   ├── PostProperty/
-│   │   ├── About/
-│   │   └── Contact/
-│   ├── App.js
-│   ├── App.css
-│   ├── index.js
-│   └── index.css
+├── backend/
+│   ├── server.js
+│   ├── .env.example
+│   ├── package.json
+│   ├── data/
+│   └── src/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   ├── package.json
+│   ├── postcss.config.cjs
+│   └── tailwind.config.js
+├── docker/
 └── package.json
 ```
 
-## Pages
+## Setup
 
-1. **Home** - Landing page with hero section, featured properties, and city explorer
-2. **Listings** - Property listings with advanced filters
-3. **Property Detail** - Detailed property information with image gallery
-4. **Post Property** - Form to list new properties
-5. **About** - Information about the platform
-6. **Contact** - Contact form and company information
+1. Install backend dependencies:
 
-## Future Enhancements
+```bash
+cd backend
+npm install
+```
 
-- [ ] User authentication and profiles
-- [ ] Image upload functionality
-- [ ] Favorites/Wishlist feature
-- [ ] Real-time messaging between users
-- [ ] Google Maps integration
-- [ ] Payment gateway integration
-- [ ] Reviews and ratings
-- [ ] Backend API integration
+2. Install frontend dependencies:
 
-## Contributing
+```bash
+cd ../frontend
+npm install
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+3. Create env files:
 
-## License
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
 
-This project is licensed under the MIT License.
+4. From project root, run:
+
+```bash
+npm run dev
+```
+
+Frontend runs on http://localhost:3000 and backend runs on http://localhost:5001.
+
+## Root Scripts
+
+- npm run dev: runs frontend + backend together
+- npm start: runs frontend
+- npm run server: runs backend
+- npm run build: builds frontend
+
+## API
+
+- GET /api/health
+- GET /api/cms
+- POST /api/admin/login
+- PUT /api/admin/cms
+- POST /api/admin/seed
+- GET /api/admin/bookings
+- PATCH /api/admin/bookings/:id
+- PATCH /api/admin/bookings/:id/status
+
+## Notes
+
+- Twilio integration has been removed.
+- No dummy CMS JSON files are auto-created by backend startup.
+- If backend/data/cms.json is missing or invalid, seed endpoint returns 404 with cms: null.
+- Frontend dummy fallback cards/slides are hidden when CMS data is absent.
+
+## Local Data
+
+- CMS source file (optional for manual seed): backend/data/cms.json
+- Booking source file (optional for migration): backend/data/bookings.json
+
+If these files are missing, backend runs normally and uses MongoDB state.

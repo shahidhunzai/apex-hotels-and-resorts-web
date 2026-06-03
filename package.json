@@ -2,56 +2,16 @@
   "name": "roomy-pk",
   "version": "1.0.0",
   "private": true,
-  "proxy": "http://localhost:5001",
-  "dependencies": {
-    "@emailjs/browser": "^4.4.1",
-    "bcryptjs": "^3.0.3",
-    "bootstrap": "^5.3.8",
-    "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "heic2any": "^0.0.4",
-    "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.3.3",
-    "nodemailer": "^8.0.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "react-scripts": "5.0.1",
-    "react-slick": "^0.31.0",
-    "slick-carousel": "^1.8.1",
-    "twilio": "^6.0.0",
-    "yet-another-react-lightbox": "^3.31.0"
-  },
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm start\"",
-    "start": "react-scripts start",
-    "server": "node server/index.js",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "dev": "concurrently \"npm run server\" \"npm run start\"",
+    "start": "cd frontend && npm start",
+    "client": "cd frontend && npm start",
+    "server": "cd backend && node server.js",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.24",
     "concurrently": "^9.2.1",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.2.0"
+    "dotenv": "^17.3.1"
   }
 }
