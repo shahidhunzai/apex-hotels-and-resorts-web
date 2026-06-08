@@ -200,14 +200,17 @@ const createBookingService = ({ mailerService }) => {
       await Booking.create({ ...bookingRecord, status: 'new' });
       return { success: true };
     } catch (error) {
+      console.error('Booking email send failed:', error?.message || error);
       await Booking.create({
         ...bookingRecord,
         status: 'email_failed',
         error: error?.message || 'Unknown SMTP error',
       });
-      const sendError = new Error('Failed to send booking emails.');
-      sendError.status = 500;
-      throw sendError;
+      return {
+        success: true,
+        emailSent: false,
+        warning: 'Booking saved, but confirmation email could not be sent right now.',
+      };
     }
   };
 

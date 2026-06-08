@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './ContactSection.css';
+import { getApiUrl } from '../../services/apiBase';
 
 const ContactSection = ({ data }) => {
   const phone = data?.phone || '+92-3-111-444-100';
@@ -32,7 +33,7 @@ const ContactSection = ({ data }) => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/contact', {
+      const response = await fetch(getApiUrl('/api/contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

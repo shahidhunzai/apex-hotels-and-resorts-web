@@ -1,3 +1,5 @@
+import { getApiUrl } from './apiBase';
+
 const requestJson = async (url, options, fallbackMessage) => {
   const response = await fetch(url, options);
   const payload = await response.json().catch(() => null);
@@ -15,7 +17,7 @@ const requestJson = async (url, options, fallbackMessage) => {
   return payload || {};
 };
 
-export const fetchCms = async () => requestJson('/api/cms', undefined, 'Failed to load CMS data');
+export const fetchCms = async () => requestJson(getApiUrl('/api/cms'), undefined, 'Failed to load CMS data');
 
 export const fetchHomePage = async () => {
   const data = await fetchCms();
@@ -24,7 +26,7 @@ export const fetchHomePage = async () => {
 
 export const fetchGooglePlaceReviews = async (placeId) => {
   const params = new URLSearchParams({ placeId: String(placeId || '').trim() });
-  return requestJson(`/api/google-reviews?${params.toString()}`, undefined, 'Failed to fetch Google reviews');
+  return requestJson(getApiUrl(`/api/google-reviews?${params.toString()}`), undefined, 'Failed to fetch Google reviews');
 };
 
 const getAdminHeaders = (token) => {
@@ -40,7 +42,7 @@ const getAdminHeaders = (token) => {
 };
 
 export const adminLogin = async (username, password) => {
-  return requestJson('/api/admin/login', {
+  return requestJson(getApiUrl('/api/admin/login'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -50,7 +52,7 @@ export const adminLogin = async (username, password) => {
 };
 
 export const updateCms = async (cmsData, token) => {
-  return requestJson('/api/admin/cms', {
+  return requestJson(getApiUrl('/api/admin/cms'), {
     method: 'PUT',
     headers: getAdminHeaders(token),
     body: JSON.stringify(cmsData),
@@ -58,20 +60,20 @@ export const updateCms = async (cmsData, token) => {
 };
 
 export const seedCms = async (token) => {
-  return requestJson('/api/admin/seed', {
+  return requestJson(getApiUrl('/api/admin/seed'), {
     method: 'POST',
     headers: getAdminHeaders(token),
   }, 'Failed to seed CMS');
 };
 
 export const fetchAdminBookings = async (token) => {
-  return requestJson('/api/admin/bookings', {
+  return requestJson(getApiUrl('/api/admin/bookings'), {
     headers: getAdminHeaders(token),
   }, 'Failed to fetch bookings');
 };
 
 export const updateBookingStatus = async (bookingId, status, token, options = {}) => {
-  return requestJson(`/api/admin/bookings/${bookingId}/status`, {
+  return requestJson(getApiUrl(`/api/admin/bookings/${bookingId}/status`), {
     method: 'PATCH',
     headers: getAdminHeaders(token),
     body: JSON.stringify({ status, resendNotifications: Boolean(options.resendNotifications) }),
@@ -79,11 +81,19 @@ export const updateBookingStatus = async (bookingId, status, token, options = {}
 };
 
 export const updateBooking = async (bookingId, data, token) => {
-  return requestJson(`/api/admin/bookings/${bookingId}`, {
+  return requestJson(getApiUrl(`/api/admin/bookings/${bookingId}`), {
     method: 'PATCH',
     headers: getAdminHeaders(token),
     body: JSON.stringify(data),
   }, 'Failed to update booking');
+};
+
+export const updateAdminAccount = async (payload, token) => {
+  return requestJson(getApiUrl('/api/admin/account'), {
+    method: 'PATCH',
+    headers: getAdminHeaders(token),
+    body: JSON.stringify(payload),
+  }, 'Failed to update admin account');
 };
 
 export const fetchRoomAvailability = async (resortName = '') => {
@@ -91,5 +101,5 @@ export const fetchRoomAvailability = async (resortName = '') => {
   if (resortName) params.set('resortName', resortName);
   const query = params.toString();
   const url = query ? `/api/bookings/availability?${query}` : '/api/bookings/availability';
-  return requestJson(url, undefined, 'Failed to fetch room availability');
+  return requestJson(getApiUrl(url), undefined, 'Failed to fetch room availability');
 };

@@ -11,6 +11,7 @@ const createAdminRoutes = ({ authorizeAdmin, adminController, rateLimiters }) =>
   router.get('/admin/bookings', adminLimiter, authorizeAdmin, adminController.getBookings);
   router.patch('/admin/bookings/:id/status', adminLimiter, authorizeAdmin, adminController.updateBookingStatus);
   router.patch('/admin/bookings/:id', adminLimiter, authorizeAdmin, adminController.updateBooking);
+  router.patch('/admin/account', adminLimiter, authorizeAdmin, adminController.updateAccount);
 
   return router;
 };

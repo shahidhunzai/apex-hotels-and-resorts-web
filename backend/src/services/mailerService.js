@@ -133,6 +133,17 @@ const createContactGuestHtml = (data) => `
 `;
 
 const createMailerService = ({ smtpHost, smtpPort, smtpSecure, smtpUser, smtpPass, fromEmail, adminEmail }) => {
+  const hasMailerConfig = Boolean(smtpHost && smtpPort && smtpUser && smtpPass && adminEmail && (fromEmail || smtpUser));
+
+  const requireMailerConfig = () => {
+    if (hasMailerConfig) return;
+    const error = new Error('Email service is not configured. Please set SMTP and email environment variables.');
+    error.status = 503;
+    throw error;
+  };
+
+  const senderEmail = fromEmail || smtpUser;
+
   const transporter = nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
@@ -146,8 +157,9 @@ const createMailerService = ({ smtpHost, smtpPort, smtpSecure, smtpUser, smtpPas
   });
 
   const sendConfirmedBookingEmail = async (booking) => {
+    requireMailerConfig();
     await transporter.sendMail({
-      from: `APEX Hotels and Resorts <${fromEmail}>`,
+      from: `APEX Hotels and Resorts <${senderEmail}>`,
       to: booking.email,
       replyTo: adminEmail,
       subject: `Booking Confirmed - ${booking.roomName} (${booking.resortName})`,
@@ -156,8 +168,9 @@ const createMailerService = ({ smtpHost, smtpPort, smtpSecure, smtpUser, smtpPas
   };
 
   const sendContactEmails = async ({ name, email, phone, subject, message }) => {
+    requireMailerConfig();
     await transporter.sendMail({
-      from: `APEX Hotels and Resorts <${fromEmail}>`,
+      from: `APEX Hotels and Resorts <${senderEmail}>`,
       to: adminEmail,
       replyTo: email,
       subject: `New contact inquiry: ${subject}`,
@@ -165,7 +178,7 @@ const createMailerService = ({ smtpHost, smtpPort, smtpSecure, smtpUser, smtpPas
     });
 
     await transporter.sendMail({
-      from: `APEX Hotels and Resorts <${fromEmail}>`,
+      from: `APEX Hotels and Resorts <${senderEmail}>`,
       to: email,
       replyTo: adminEmail,
       subject: 'Thank you for contacting APEX Hotels and Resorts',
@@ -174,18 +187,19 @@ const createMailerService = ({ smtpHost, smtpPort, smtpSecure, smtpUser, smtpPas
   };
 
   const sendBookingEmails = async ({ fullName, email, mobile, dateFrom, dateTo, persons, roomName, resortName }) => {
+    requireMailerConfig();
     await transporter.sendMail({
-      from: `APEX Hotels and Resorts <${fromEmail}>`,
+      from: `APEX Hotels and Resorts <${senderEmail}>`,
       to: adminEmail,
-      replyTo: 'butt16851@gmail.com',
+      replyTo: adminEmail,
       subject: `New Booking - ${roomName} (${resortName})`,
       html: createAdminHtml({ fullName, email, mobile, dateFrom, dateTo, persons, roomName, resortName }),
     });
 
     await transporter.sendMail({
-      from: `APEX Hotels and Resorts <${fromEmail}>`,
+      from: `APEX Hotels and Resorts <${senderEmail}>`,
       to: email,
-      replyTo: 'butt16851@gmail.com',
+      replyTo: adminEmail,
       subject: 'Confirmation of Your Booking and Contact Information',
       html: createGuestHtml({ fullName, email, mobile, dateFrom, dateTo, persons, roomName, resortName }),
     });

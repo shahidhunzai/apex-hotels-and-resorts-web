@@ -4,10 +4,12 @@ import {
   adminLogin,
   fetchAdminBookings,
   fetchCms,
+  updateAdminAccount,
   updateBooking,
   updateBookingStatus,
   updateCms,
 } from '../../services/cmsApi';
+import { getApiUrl } from '../../services/apiBase';
 import './AdminCMS.css';
 
 const toSlug = (value) =>
@@ -169,6 +171,7 @@ const NAV_ITEMS = [
   { id: 'home-footer-reviews', label: 'Footer Reviews', icon: '⭐' },
   { id: 'destinations', label: 'Destinations', icon: '🏔️' },
   { id: 'bookings', label: 'Bookings', icon: '📋' },
+  { id: 'account', label: 'Admin Account', icon: '🔐' },
 ];
 
 /* ── ADMIN COMPONENT ──────────────────────────────── */
@@ -192,6 +195,12 @@ const AdminCMS = () => {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [brandLogo, setBrandLogo] = useState('');
+  const [accountForm, setAccountForm] = useState({
+    currentPassword: '',
+    newUsername: '',
+    newPassword: '',
+    confirmNewPassword: '',
+  });
 
   const showSuccess = useCallback((message) => {
     setError('');
@@ -391,7 +400,7 @@ const AdminCMS = () => {
 
   const uploadImage = async (file) => {
     const base64 = await prepareImageUpload(file);
-    const result = await fetch('/api/admin/upload', {
+    const result = await fetch(getApiUrl('/api/admin/upload'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ image: base64 }),
@@ -939,6 +948,47 @@ const AdminCMS = () => {
     setCmsData({ destinations: [], homePage: {}, destinationsPage: {}, listingsPage: {}, getawaysPage: {} });
     setBookings([]);
     setActiveNav('dashboard');
+  };
+
+  const handleAccountField = (field, value) => {
+    setAccountForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAccountUpdate = async (e) => {
+    e.preventDefault();
+    const currentPassword = String(accountForm.currentPassword || '').trim();
+    const newUsername = String(accountForm.newUsername || '').trim();
+    const newPassword = String(accountForm.newPassword || '');
+    const confirmNewPassword = String(accountForm.confirmNewPassword || '');
+
+    if (!currentPassword) {
+      showError('Current password is required.');
+      return;
+    }
+    if (!newUsername && !newPassword) {
+      showError('Enter a new username or new password.');
+      return;
+    }
+    if (newPassword && newPassword.length < 8) {
+      showError('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword && newPassword !== confirmNewPassword) {
+      showError('New password and confirm password do not match.');
+      return;
+    }
+
+    try {
+      const result = await updateAdminAccount({ currentPassword, newUsername, newPassword }, token);
+      if (result?.token) {
+        localStorage.setItem('admin_token', result.token);
+        setToken(result.token);
+      }
+      setAccountForm({ currentPassword: '', newUsername: '', newPassword: '', confirmNewPassword: '' });
+      showSuccess(result?.message || 'Admin account updated successfully.');
+    } catch (err) {
+      showError(err.message || 'Failed to update admin account.');
+    }
   };
 
   const navTo = (id) => { setActiveNav(id); setSidebarOpen(false); };
@@ -2236,6 +2286,54 @@ const AdminCMS = () => {
     );
   };
 
+  const renderAccount = () => (
+    <div className="panel-section">
+      <h2 className="section-title">🔐 Admin Account</h2>
+      <p className="section-desc">Update your admin username or password from here.</p>
+      <form className="form-grid" onSubmit={handleAccountUpdate}>
+        <div className="form-group full">
+          <label>Current Password</label>
+          <input
+            type="password"
+            value={accountForm.currentPassword}
+            onChange={(e) => handleAccountField('currentPassword', e.target.value)}
+            placeholder="Enter current password"
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label>New Username (optional)</label>
+          <input
+            value={accountForm.newUsername}
+            onChange={(e) => handleAccountField('newUsername', e.target.value)}
+            placeholder="admin"
+          />
+        </div>
+        <div className="form-group">
+          <label>New Password (optional)</label>
+          <input
+            type="password"
+            value={accountForm.newPassword}
+            onChange={(e) => handleAccountField('newPassword', e.target.value)}
+            placeholder="At least 8 characters"
+          />
+        </div>
+        <div className="form-group">
+          <label>Confirm New Password</label>
+          <input
+            type="password"
+            value={accountForm.confirmNewPassword}
+            onChange={(e) => handleAccountField('confirmNewPassword', e.target.value)}
+            placeholder="Re-enter new password"
+          />
+        </div>
+        <div className="form-group full">
+          <button className="btn primary" type="submit">Update Account</button>
+        </div>
+      </form>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeNav) {
       case 'dashboard': return renderDashboard();
@@ -2252,6 +2350,7 @@ const AdminCMS = () => {
       case 'home-footer-reviews': return renderFooterReviews();
       case 'destinations': return renderDestinations();
       case 'bookings': return renderBookings();
+      case 'account': return renderAccount();
       default: return renderDashboard();
     }
   };

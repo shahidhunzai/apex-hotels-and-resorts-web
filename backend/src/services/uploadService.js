@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const storageService = require('./storageService');
 
-const saveBase64Image = ({ image, uploadsDir }) => {
+const parseBase64Image = (image) => {
   if (!image || !String(image).startsWith('data:image/')) {
     const error = new Error('Invalid image data.');
     error.status = 400;
@@ -15,7 +16,21 @@ const saveBase64Image = ({ image, uploadsDir }) => {
     throw error;
   }
 
-  const mimeType = matches[1].toLowerCase();
+  return {
+    mimeType: matches[1].toLowerCase(),
+    normalizedBase64: matches[2].replace(/\s+/g, ''),
+  };
+};
+
+const saveBase64Image = async ({ image, uploadsDir }) => {
+  const { mimeType, normalizedBase64 } = parseBase64Image(image);
+
+  // Vercel local filesystem is ephemeral. Without cloud storage configured,
+  // keep a durable reference by storing the data URI directly in CMS data.
+  if (process.env.VERCEL && !process.env.CLOUDINARY_CLOUD_NAME && !process.env.AWS_BUCKET_NAME) {
+    return String(image);
+  }
+
   const mimeToExt = {
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
@@ -35,11 +50,23 @@ const saveBase64Image = ({ image, uploadsDir }) => {
   };
 
   const ext = mimeToExt[mimeType] || 'img';
+  const originalName = `upload.${ext}`;
+  const fileBuffer = Buffer.from(normalizedBase64, 'base64');
+
+  // Prefer configured cloud storage providers.
+  const saved = await storageService.saveFile(fileBuffer, originalName, mimeType);
+  if (saved?.url) {
+    return saved.url;
+  }
+
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
   const filepath = path.join(uploadsDir, filename);
-  const normalizedBase64 = matches[2].replace(/\s+/g, '');
 
-  fs.writeFileSync(filepath, Buffer.from(normalizedBase64, 'base64'));
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  fs.writeFileSync(filepath, fileBuffer);
   return `/uploads/${filename}`;
 };
 

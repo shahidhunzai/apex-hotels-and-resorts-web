@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './BookingFormModal.css';
+import { getApiUrl } from '../../services/apiBase';
 
 const BookingFormModal = ({ room, resort, onClose }) => {
   const formRef = useRef();
@@ -66,7 +67,7 @@ const BookingFormModal = ({ room, resort, onClose }) => {
     }
 
     try {
-      const response = await fetch('/api/bookings', {
+      const response = await fetch(getApiUrl('/api/bookings'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -19,6 +19,8 @@ const env = {
   smtpSecure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
   adminEmail: process.env.ADMIN_EMAIL,
   fromEmail: process.env.FROM_EMAIL,
+  emailLogoPath: String(process.env.EMAIL_LOGO_PATH || '').trim(),
+  emailLogoUrl: String(process.env.EMAIL_LOGO_URL || '').trim(),
   googlePlacesApiKey: String(process.env.GOOGLE_PLACES_API_KEY || '').trim(),
 };
 

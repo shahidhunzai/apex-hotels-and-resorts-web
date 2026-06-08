@@ -34,8 +34,11 @@ const createAdminController = ({
 
   const upload = async (req, res) => {
     try {
-      const url = saveBase64Image({ image: req.body?.image, uploadsDir });
-      return res.json({ url });
+      const url = await saveBase64Image({ image: req.body?.image, uploadsDir });
+      const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+      const host = req.get('host');
+      const absoluteUrl = /^(?:https?:\/\/|data:)/i.test(url) ? url : `${proto}://${host}${url}`;
+      return res.json({ url: absoluteUrl });
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message || 'Failed to save image file.' });
     }
@@ -104,6 +107,64 @@ const createAdminController = ({
     }
   };
 
+  const updateAccount = async (req, res) => {
+    const adminId = String(req.admin?.sub || '').trim();
+    if (!adminId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const currentPassword = String(req.body?.currentPassword || '').trim();
+    const newUsername = String(req.body?.newUsername || '').trim();
+    const newPassword = String(req.body?.newPassword || '');
+
+    if (!currentPassword) {
+      return res.status(400).json({ error: 'Current password is required.' });
+    }
+    if (!newUsername && !newPassword) {
+      return res.status(400).json({ error: 'Provide a new username or new password.' });
+    }
+
+    try {
+      const admin = await AdminUser.findOne({ _id: adminId, isActive: true });
+      if (!admin) {
+        return res.status(404).json({ error: 'Admin user not found.' });
+      }
+
+      const matches = await bcrypt.compare(currentPassword, admin.passwordHash);
+      if (!matches) {
+        return res.status(401).json({ error: 'Current password is incorrect.' });
+      }
+
+      if (newUsername && newUsername !== admin.username) {
+        const exists = await AdminUser.findOne({ username: newUsername, _id: { $ne: admin._id } }).lean();
+        if (exists) {
+          return res.status(409).json({ error: 'Username is already in use.' });
+        }
+        admin.username = newUsername;
+      }
+
+      if (newPassword) {
+        if (newPassword.length < 8) {
+          return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+        }
+        admin.passwordHash = await bcrypt.hash(newPassword, 12);
+      }
+
+      await admin.save();
+
+      const token = issueAdminToken(admin, jwtExpiresIn);
+      return res.json({
+        success: true,
+        token,
+        username: admin.username,
+        role: admin.role,
+        message: 'Admin account updated successfully.',
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message || 'Failed to update admin account.' });
+    }
+  };
+
   return {
     login,
     upload,
@@ -112,6 +173,7 @@ const createAdminController = ({
     getBookings,
     updateBookingStatus,
     updateBooking,
+    updateAccount,
   };
 };
 
