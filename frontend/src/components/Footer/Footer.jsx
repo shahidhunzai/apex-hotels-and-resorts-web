@@ -204,6 +204,7 @@ const Footer = () => {
   const [socialLinks, setSocialLinks] = useState([]);
   const [cmsReviews, setCmsReviews] = useState(customerReviews);
   const [footerMenuItems, setFooterMenuItems] = useState(defaultFooterMenuItems);
+  const [partnerLogosState, setPartnerLogosState] = useState(partnerLogos);
   const [googleReviews, setGoogleReviews] = useState([]);
   const [cmsPayload, setCmsPayload] = useState({ destinations: [] });
 
@@ -228,6 +229,12 @@ const Footer = () => {
           const nextReviews = normalizeReviewItems(cms);
           setCmsReviews(nextReviews.length > 0 ? nextReviews : customerReviews);
           setFooterMenuItems(normalizeFooterMenuItems(cms));
+          
+          // Fetch partner logos from CMS
+          const partnersFromCms = cms?.partnerLogos;
+          if (Array.isArray(partnersFromCms) && partnersFromCms.length > 0) {
+            setPartnerLogosState(partnersFromCms);
+          }
         }
       } catch {
         if (isMounted) {
@@ -235,6 +242,7 @@ const Footer = () => {
           setCmsPayload({ destinations: [] });
           setCmsReviews(customerReviews);
           setFooterMenuItems(defaultFooterMenuItems);
+          setPartnerLogosState(partnerLogos);
         }
       }
     };
@@ -363,7 +371,7 @@ const Footer = () => {
           </div>
           <h3>WE ALSO HOST</h3>
           <div className="host-logos">
-            {partnerLogos.map((p, i) => (
+            {partnerLogosState.map((p, i) => (
               <img className="host-logo" src={p.src} alt={p.alt} key={i} />
             ))}
           </div>

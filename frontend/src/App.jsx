@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import './App.css';
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
@@ -11,6 +11,18 @@ import Destinations from './pages/Destinations/Destinations';
 import Contact from './pages/Contact/Contact';
 import AdminCMS from './pages/Admin/AdminCMS';
 import DynamicDestinationDetail from './pages/DestinationDetail/DynamicDestinationDetail';
+import NotFound from './pages/NotFound/NotFound';
+
+// Layout component for pages with Navbar and Footer
+function MainLayout() {
+  return (
+    <>
+      <Navbar />
+      <Outlet />
+      <Footer />
+    </>
+  );
+}
 
 function App() {
   return (
@@ -20,23 +32,19 @@ function App() {
           {/* Admin route – no frontend Navbar/Footer */}
           <Route path="/admin/cms" element={<AdminCMS />} />
 
-          {/* All other routes – wrapped with Navbar + Footer */}
-          <Route path="*" element={
-            <>
-              <Navbar />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/destinations" element={<Destinations />} />
-                <Route path="/destinations/:destinationSlug/:pointSlug" element={<DynamicDestinationDetail />} />
-                <Route path="/destinations/:destinationSlug" element={<DynamicDestinationDetail />} />
-                <Route path="/listings" element={<Listings />} />
-                <Route path="/property/:id" element={<PropertyDetail />} />
-                <Route path="/post-property" element={<PostProperty />} />
-                <Route path="/contact" element={<Contact />} />
-              </Routes>
-              <Footer />
-            </>
-          } />
+          {/* All other routes – wrapped with Navbar + Footer via MainLayout */}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/destinations" element={<Destinations />} />
+            <Route path="/destinations/:destinationSlug/:pointSlug" element={<DynamicDestinationDetail />} />
+            <Route path="/destinations/:destinationSlug" element={<DynamicDestinationDetail />} />
+            <Route path="/listings" element={<Listings />} />
+            <Route path="/property/:id" element={<PropertyDetail />} />
+            <Route path="/post-property" element={<PostProperty />} />
+            <Route path="/contact" element={<Contact />} />
+            {/* 404 Not Found */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Routes>
       </div>
     </Router>

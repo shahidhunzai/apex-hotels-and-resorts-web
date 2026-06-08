@@ -11,6 +11,7 @@ const createCmsService = ({ cmsFile, ensureDataDir }) => {
       destinationsPage: cms?.destinationsPage ?? null,
       listingsPage: cms?.listingsPage ?? null,
       getawaysPage: cms?.getawaysPage ?? null,
+      partnerLogos: cms?.partnerLogos ?? null,
     };
   };
 
@@ -22,6 +23,7 @@ const createCmsService = ({ cmsFile, ensureDataDir }) => {
     if (cmsPayload?.destinationsPage && typeof cmsPayload.destinationsPage === 'object') update.destinationsPage = cmsPayload.destinationsPage;
     if (cmsPayload?.listingsPage && typeof cmsPayload.listingsPage === 'object') update.listingsPage = cmsPayload.listingsPage;
     if (cmsPayload?.getawaysPage && typeof cmsPayload.getawaysPage === 'object') update.getawaysPage = cmsPayload.getawaysPage;
+    if (Array.isArray(cmsPayload?.partnerLogos)) update.partnerLogos = cmsPayload.partnerLogos;
 
     if (Object.keys(update).length === 0) {
       const error = new Error('No valid CMS fields provided.');
@@ -54,6 +56,7 @@ const createCmsService = ({ cmsFile, ensureDataDir }) => {
     if (cms.destinationsPage && typeof cms.destinationsPage === 'object') update.destinationsPage = cms.destinationsPage;
     if (cms.listingsPage && typeof cms.listingsPage === 'object') update.listingsPage = cms.listingsPage;
     if (cms.getawaysPage && typeof cms.getawaysPage === 'object') update.getawaysPage = cms.getawaysPage;
+    if (Array.isArray(cms.partnerLogos)) update.partnerLogos = cms.partnerLogos;
 
     await CmsData.findOneAndUpdate(
       { key: 'main' },

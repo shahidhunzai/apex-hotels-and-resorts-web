@@ -9,6 +9,7 @@ const CmsDataSchema = new mongoose.Schema(
     destinationsPage: { type: mongoose.Schema.Types.Mixed, default: {} },
     listingsPage: { type: mongoose.Schema.Types.Mixed, default: {} },
     getawaysPage: { type: mongoose.Schema.Types.Mixed, default: {} },
+    partnerLogos: { type: [mongoose.Schema.Types.Mixed], default: [] },
   },
   { timestamps: true }
 );

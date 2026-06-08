@@ -35,6 +35,7 @@
         ],
     ];
 
+    // Default partner logos - will be replaced by dynamic data from CMS
     $partnerLogos = [
         ['src' => 'https://assets.roomy.pk/images/locations_5/homepage/unilever_desktop.png', 'alt' => 'Unilever'],
         ['src' => 'https://assets.roomy.pk/images/locations_5/homepage/hum_desktop.png', 'alt' => 'HUM'],
@@ -119,7 +120,7 @@
                 </div>
             </div>
             <h3>WE ALSO HOST</h3>
-            <div class="host-logos">
+            <div class="host-logos" id="partner-logos-container">
                 @foreach ($partnerLogos as $logo)
                     <img class="host-logo" src="{{ $logo['src'] }}" alt="{{ $logo['alt'] }}">
                 @endforeach
@@ -166,3 +167,49 @@
         </div>
     </div>
 </footer>
+
+<script>
+    // Fetch partner logos dynamically from CMS
+    (function() {
+        const container = document.getElementById('partner-logos-container');
+        if (!container) return;
+
+        // Determine the API URL
+        const apiUrl = (() => {
+            if (typeof window !== 'undefined' && window.location) {
+                const baseUrl = window.location.origin;
+                // Check if we're in development or production
+                if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+                    return 'http://localhost:5000/api/cms';
+                }
+            }
+            // Default to the current origin
+            return '/api/cms';
+        })();
+
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch CMS data');
+                return response.json();
+            })
+            .then(data => {
+                if (data.partnerLogos && Array.isArray(data.partnerLogos) && data.partnerLogos.length > 0) {
+                    // Clear existing logos
+                    container.innerHTML = '';
+                    
+                    // Add new logos from CMS
+                    data.partnerLogos.forEach(logo => {
+                        const img = document.createElement('img');
+                        img.className = 'host-logo';
+                        img.src = logo.src || logo.image || '';
+                        img.alt = logo.alt || logo.name || 'Partner Logo';
+                        container.appendChild(img);
+                    });
+                }
+            })
+            .catch(error => {
+                // Silently fail and keep default logos
+                console.debug('Could not load dynamic partner logos, using defaults:', error);
+            });
+    })();
+</script>

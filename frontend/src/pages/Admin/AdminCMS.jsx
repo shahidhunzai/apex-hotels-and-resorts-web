@@ -169,6 +169,7 @@ const NAV_ITEMS = [
   { id: 'home-contact', label: 'Contact Info', icon: '📞' },
   { id: 'home-footer-menu', label: 'Footer Menu', icon: '📚' },
   { id: 'home-footer-reviews', label: 'Footer Reviews', icon: '⭐' },
+  { id: 'home-partner-logos', label: 'Partner Logos', icon: '🤝' },
   { id: 'destinations', label: 'Destinations', icon: '🏔️' },
   { id: 'bookings', label: 'Bookings', icon: '📋' },
   { id: 'account', label: 'Admin Account', icon: '🔐' },
@@ -184,7 +185,7 @@ const AdminCMS = () => {
   const [activeNav, setActiveNav] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [cmsData, setCmsData] = useState({ destinations: [], homePage: {}, destinationsPage: {}, listingsPage: {}, getawaysPage: {} });
+  const [cmsData, setCmsData] = useState({ destinations: [], homePage: {}, destinationsPage: {}, listingsPage: {}, getawaysPage: {}, partnerLogos: [] });
   const [bookings, setBookings] = useState([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState('');
   const [selectedPointId, setSelectedPointId] = useState('');
@@ -312,6 +313,7 @@ const AdminCMS = () => {
         destinationsPage: cms?.destinationsPage || {},
         listingsPage: cms?.listingsPage || {},
         getawaysPage: cms?.getawaysPage || {},
+        partnerLogos: cms?.partnerLogos || [],
       });
       setBookings(bookingsPayload?.bookings || []);
 
@@ -1482,6 +1484,97 @@ const AdminCMS = () => {
     );
   };
 
+  const renderPartnerLogos = () => {
+    const logos = cmsData.partnerLogos || [];
+
+    const patchLogoItem = (idx, field, value) => {
+      setCmsData((prev) => ({
+        ...prev,
+        partnerLogos: logos.map((logo, i) => (
+          i === idx ? { ...logo, [field]: value } : logo
+        )),
+      }));
+    };
+
+    const addLogo = () => {
+      setCmsData((prev) => ({
+        ...prev,
+        partnerLogos: [...(prev.partnerLogos || []), { src: '', alt: '', name: '' }],
+      }));
+      showSuccess('Partner logo added.');
+    };
+
+    const removeLogo = (idx) => {
+      setCmsData((prev) => ({
+        ...prev,
+        partnerLogos: (prev.partnerLogos || []).filter((_, i) => i !== idx),
+      }));
+      showSuccess('Partner logo deleted.');
+    };
+
+    const uploadLogoImage = async (idx, file) => {
+      if (!file) return;
+      try {
+        const imageUrl = await uploadImage(file);
+        patchLogoItem(idx, 'src', imageUrl);
+        showSuccess('Logo image uploaded successfully.');
+      } catch (err) {
+        showError(err.message || 'Unable to upload logo image.');
+      }
+    };
+
+    return (
+      <div className="panel-section">
+        <h2 className="section-title">🤝 Partner Logos</h2>
+        <p className="section-desc">Manage the partner company logos shown in the "We Also Host" section of the footer.</p>
+
+        {logos.length === 0 ? <p className="empty-msg">No partner logos added yet.</p> : null}
+
+        <div className="items-list">
+          {logos.map((logo, idx) => (
+            <div key={idx} className="item-card">
+              <div className="item-card-header">
+                <span className="item-num">Partner #{idx + 1}</span>
+                <button className="btn-icon danger" type="button" onClick={() => removeLogo(idx)} title="Remove logo">✕</button>
+              </div>
+
+              {logo.src ? <img src={logo.src} alt={logo.alt || `Partner ${idx + 1}`} className="item-card-img" /> : null}
+
+              <div className="form-grid compact">
+                <div className="form-group">
+                  <label>Company Name</label>
+                  <input value={logo.name || ''} onChange={(e) => patchLogoItem(idx, 'name', e.target.value)} placeholder="Partner Company Name" />
+                </div>
+                <div className="form-group full">
+                  <label>Alt Text (accessibility)</label>
+                  <input value={logo.alt || ''} onChange={(e) => patchLogoItem(idx, 'alt', e.target.value)} placeholder="Company Name" />
+                </div>
+                <div className="form-group full upload-field-stack">
+                  <label>Upload Logo Image</label>
+                  <input
+                    type="file"
+                    accept={IMAGE_INPUT_ACCEPT}
+                    onChange={async (e) => {
+                      await uploadLogoImage(idx, e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                  {!!logo.src && (
+                    <button className="btn small outline" type="button" onClick={() => { patchLogoItem(idx, 'src', ''); showSuccess('Logo image removed.'); }}>
+                      Remove Current Image
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button className="btn outline" type="button" onClick={addLogo}>+ Add Partner Logo</button>
+      </div>
+    );
+  };
+
   const renderFooterMenu = () => {
     const defaultMenuItems = [
       { id: 'footer-home', label: 'HOME', href: '/' },
@@ -2348,6 +2441,7 @@ const AdminCMS = () => {
       case 'home-contact': return renderContact();
       case 'home-footer-menu': return renderFooterMenu();
       case 'home-footer-reviews': return renderFooterReviews();
+      case 'home-partner-logos': return renderPartnerLogos();
       case 'destinations': return renderDestinations();
       case 'bookings': return renderBookings();
       case 'account': return renderAccount();
